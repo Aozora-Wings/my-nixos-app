@@ -85,8 +85,8 @@ unpackPhase = ''
 installPhase = ''
   runHook preInstall
 
-  sed -i "s|Exec=sh /usr/local/115Browser/115.sh|Exec=sh $out/usr/local/115Browser/115.sh|g" $out/usr/share/applications/115.desktop
-  sed -i "s|Icon=/usr/local/115Browser/res/115Browser.png|Icon=$out/usr/local/115Browser/res/115Browser.png|g" $out/usr/share/applications/115.desktop
+  sed -i "s|Exec=sh /usr/local/115Browser/115.sh|Exec=sh $out/usr/local/115Browser/115.sh|g" $out/usr/share/applications/115Browser.desktop
+  sed -i "s|Icon=/usr/local/115Browser/res/115Browser.png|Icon=$out/usr/local/115Browser/res/115Browser.png|g" $out/usr/share/applications/115Browser.desktop
   sed -i "s|export LD_LIBRARY_PATH=/usr/local/115Browser:$LD_LIBRARY_PATH|export LD_LIBRARY_PATH=$out/usr/local/115Browser:$LD_LIBRARY_PATH|g" $out/usr/local/115Browser/115.sh
   sed -i "s|APP_DIR=/usr/local/115Browser|APP_DIR=$out/usr/local/115Browser|g" $out/usr/local/115Browser/115.sh
   chmod +x $out/usr/local/115Browser/115.sh
