@@ -70,6 +70,7 @@ stdenv.mkDerivation {
   inherit pname version src meta ;
     nativeBuildInputs = [
       autoPatchelfHook
+      wrapProgram
       pkgs.dpkg
     # makeBinaryWrapper not support shell wrapper specifically for `NIXOS_OZONE_WL`.
   ];
