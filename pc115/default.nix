@@ -91,7 +91,12 @@ unpackPhase = ''
   mkdir -p $out/
   cp -rT temp/usr $out
 '';
-
+postFixup = ''
+  wrapProgram $out/bin/115Browser \
+    --set LIBGL_DEBUG "verbose" \
+    --set ENABLE_VULKAN "1" \
+    --set NIXOS_OZONE_WL "1"
+'';
 #     preFixup = ''
     
 #   autoPatchelfLibs+=(${lttng-ust}/lib)
