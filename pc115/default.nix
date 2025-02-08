@@ -61,6 +61,7 @@ let
     pango
     cairo
     libidn2
+    libGL
     ];
 in
 stdenv.mkDerivation {
