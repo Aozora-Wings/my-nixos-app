@@ -105,7 +105,7 @@ unpackPhase = ''
     runHook preInstall
 
     # 修复.desktop文件路径
-    sed -i "2i export VK_ICD_FILENAMES=\"${needlib.vulkan-loader}/share/vulkan/icd.d/intel_icd.x86_64.json\"" $out/local/115Browser/115.sh
+    sed -i "2i export VK_ICD_FILENAMES=\"${pkgs.vulkan-loader}/share/vulkan/icd.d/intel_icd.x86_64.json\"" $out/local/115Browser/115.sh
     sed -i "s|Exec=sh /usr/local/115Browser/115.sh|Exec=$out/local/115Browser/115.sh|g" $out/share/applications/115Browser.desktop
     sed -i "s|Icon=/usr/local/115Browser/res/115Browser.png|Icon=$out/local/115Browser/res/115Browser.png|g" $out/share/applications/115Browser.desktop
     
