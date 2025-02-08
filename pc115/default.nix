@@ -112,7 +112,7 @@ installPhase = ''
     # 使用 patchelf 修复依赖问题
     patchelf --set-rpath $out/local/115Browser $out/local/115Browser/115Browser
     patchelf --set-interpreter $(cat $NIX_CC/nix-support/dynamic-linker) $out/local/115Browser/115Browser
-
+    autoPatchelfHook
   runHook postInstall
 '';
 }
