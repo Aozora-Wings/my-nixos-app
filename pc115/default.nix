@@ -87,7 +87,7 @@ unpackPhase = ''
 #  tar -xJf temp/data.tar.xz -C temp2
 #  tar -xf temp2/data.tar -C temp2
   mkdir -p $out/
-  cp -rT temp/usr $out/usr
+  cp -rT temp/usr $out
 '';
 
 #     preFixup = ''
@@ -98,13 +98,13 @@ unpackPhase = ''
 installPhase = ''
   runHook preInstall
 
-  sed -i "s|Exec=sh /usr/local/115Browser/115.sh|Exec=sh $out/usr/local/115Browser/115.sh|g" $out/usr/share/applications/115Browser.desktop
-  sed -i "s|Icon=/usr/local/115Browser/res/115Browser.png|Icon=$out/usr/local/115Browser/res/115Browser.png|g" $out/usr/share/applications/115Browser.desktop
-  sed -i "s|export LD_LIBRARY_PATH=/usr/local/115Browser:$LD_LIBRARY_PATH|export LD_LIBRARY_PATH=$out/usr/local/115Browser:$LD_LIBRARY_PATH|g" $out/usr/local/115Browser/115.sh
-  sed -i "s|APP_DIR=/usr/local/115Browser|APP_DIR=$out/usr/local/115Browser|g" $out/usr/local/115Browser/115.sh
-  chmod +x $out/usr/local/115Browser/115.sh
+  sed -i "s|Exec=sh /usr/local/115Browser/115.sh|Exec=sh $out/local/115Browser/115.sh|g" $out/share/applications/115Browser.desktop
+  sed -i "s|Icon=/usr/local/115Browser/res/115Browser.png|Icon=$out/local/115Browser/res/115Browser.png|g" $out/share/applications/115Browser.desktop
+  sed -i "s|export LD_LIBRARY_PATH=/usr/local/115Browser:$LD_LIBRARY_PATH|export LD_LIBRARY_PATH=$out/local/115Browser:$LD_LIBRARY_PATH|g" $out/local/115Browser/115.sh
+  sed -i "s|APP_DIR=/usr/local/115Browser|APP_DIR=$out/local/115Browser|g" $out/local/115Browser/115.sh
+  chmod +x $out/local/115Browser/115.sh
   mkdir -p $out/bin
-  ln -s $out/usr/local/115Browser/115.sh $out/bin/115.sh
+  ln -s $out/local/115Browser/115.sh $out/bin/115.sh
 
   runHook postInstall
 '';
