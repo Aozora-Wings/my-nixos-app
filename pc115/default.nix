@@ -96,23 +96,31 @@ unpackPhase = ''
 #   autoPatchelfLibs+=(${lttng-ust}/lib)
 #   echo "autoPatchelfLibs: $autoPatchelfLibs"
 # '';
-installPhase = ''
-  runHook preInstall
+  installPhase = ''
+    runHook preInstall
 
-  sed -i "s|Exec=sh /usr/local/115Browser/115.sh|Exec=sh $out/local/115Browser/115.sh|g" $out/share/applications/115Browser.desktop
-  sed -i "s|Icon=/usr/local/115Browser/res/115Browser.png|Icon=$out/local/115Browser/res/115Browser.png|g" $out/share/applications/115Browser.desktop
-  sed -i "s|export LD_LIBRARY_PATH=/usr/local/115Browser:$LD_LIBRARY_PATH|export LD_LIBRARY_PATH=$out/local/115Browser:$LD_LIBRARY_PATH|g" $out/local/115Browser/115.sh
-  sed -i "s|APP_DIR=/usr/local/115Browser|APP_DIR=$out/local/115Browser|g" $out/local/115Browser/115.sh
-  # 替换 >/dev/null 2>&1 为一个空字符串
-  sed -i "s| >/dev/null 2>&1||g" $out/local/115Browser/115.sh
-  chmod +x $out/local/115Browser/115.sh
-  chmod +x $out/local/115Browser/115Browser
-  mkdir -p $out/bin
-  ln -s $out/local/115Browser/115.sh $out/bin/115.sh
-    # 使用 patchelf 修复依赖问题
-    patchelf --set-rpath $out/local/115Browser $out/local/115Browser/115Browser
-    patchelf --set-interpreter $(cat $NIX_CC/nix-support/dynamic-linker) $out/local/115Browser/115Browser
-    autoPatchelfHook
-  runHook postInstall
-'';
+    # 修复.desktop文件路径
+    sed -i "s|Exec=sh /usr/local/115Browser/115.sh|Exec=$out/local/115Browser/115.sh|g" $out/share/applications/115Browser.desktop
+    sed -i "s|Icon=/usr/local/115Browser/res/115Browser.png|Icon=$out/local/115Browser/res/115Browser.png|g" $out/share/applications/115Browser.desktop
+    
+    # 修复启动脚本
+    sed -i "s|export LD_LIBRARY_PATH=/usr/local/115Browser:\$LD_LIBRARY_PATH|export LD_LIBRARY_PATH=${lib.makeLibraryPath needlib}:\$LD_LIBRARY_PATH|g" $out/local/115Browser/115.sh
+    sed -i "s|APP_DIR=/usr/local/115Browser|APP_DIR=$out/local/115Browser|g" $out/local/115Browser/115.sh
+    sed -i "s| >/dev/null 2>&1||g" $out/local/115Browser/115.sh
+    
+    # 设置可执行权限
+    chmod +x $out/local/115Browser/115.sh
+    chmod +x $out/local/115Browser/115Browser
+    
+    # 创建二进制链接
+    mkdir -p $out/bin
+    ln -s $out/local/115Browser/115.sh $out/bin/115.sh
+
+    # 修复ELF文件的依赖路径
+    patchelf --set-interpreter "$(cat $NIX_CC/nix-support/dynamic-linker)" \
+             --set-rpath "${lib.makeLibraryPath needlib}:$out/local/115Browser" \
+             $out/local/115Browser/115Browser
+
+    runHook postInstall
+  '';
 }
