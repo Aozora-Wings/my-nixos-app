@@ -109,6 +109,9 @@ installPhase = ''
   chmod +x $out/local/115Browser/115Browser
   mkdir -p $out/bin
   ln -s $out/local/115Browser/115.sh $out/bin/115.sh
+    # 使用 patchelf 修复依赖问题
+    patchelf --set-rpath $out/local/115Browser $out/local/115Browser/115Browser
+    patchelf --set-interpreter $(cat $NIX_CC/nix-support/dynamic-linker) $out/local/115Browser/115Browser
 
   runHook postInstall
 '';
