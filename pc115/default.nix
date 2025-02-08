@@ -69,7 +69,7 @@ unpackPhase = ''
   echo "115 unpackPhase installings...."
   mkdir temp
   dpkg-deb -R $src temp
-  ll temp
+  ls -l temp
   mkdir temp2
   tar -xJf temp/data.tar.xz -C temp2
   tar -xf temp2/data.tar -C temp2
