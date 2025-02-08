@@ -52,12 +52,12 @@ let
     atk
     at-spi2-core
     cups
-    libXcomposite
-    libXdamage
-    libXfixes
-    libXrandr
+    xorg.libXcomposite
+    xorg.libXdamage
+    xorg.libXfixes
+    xorg.libXrandr
     gbm
-    xkbcommon
+    libxkbcommon
     pango
     cairo
     libidn2
