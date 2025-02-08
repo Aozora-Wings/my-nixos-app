@@ -103,6 +103,9 @@ installPhase = ''
   sed -i "s|export LD_LIBRARY_PATH=/usr/local/115Browser:$LD_LIBRARY_PATH|export LD_LIBRARY_PATH=$out/usr/local/115Browser:$LD_LIBRARY_PATH|g" $out/usr/local/115Browser/115.sh
   sed -i "s|APP_DIR=/usr/local/115Browser|APP_DIR=$out/usr/local/115Browser|g" $out/usr/local/115Browser/115.sh
   chmod +x $out/usr/local/115Browser/115.sh
+  mkdir -p $out/bin
+  ln -s $out/usr/local/115Browser/115.sh $out/bin/115.sh
+
   runHook postInstall
 '';
 }
