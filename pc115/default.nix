@@ -108,6 +108,7 @@ unpackPhase = ''
     sed -i "s|export LD_LIBRARY_PATH=/usr/local/115Browser:\$LD_LIBRARY_PATH|export LD_LIBRARY_PATH=${lib.makeLibraryPath needlib}:\$LD_LIBRARY_PATH|g" $out/local/115Browser/115.sh
     sed -i "s|APP_DIR=/usr/local/115Browser|APP_DIR=$out/local/115Browser|g" $out/local/115Browser/115.sh
     sed -i "s| >/dev/null 2>&1||g" $out/local/115Browser/115.sh
+    sed -i 's|exec "$APP_DIR/115Browser"|exec "$APP_DIR/115Browser" --use-gl=desktop|g' $out/local/115Browser/115.sh
     
     # 设置可执行权限
     chmod +x $out/local/115Browser/115.sh
