@@ -86,73 +86,9 @@ installPhase = ''
 
   sed -i "s|Exec=sh /usr/local/115Browser/115.sh|Exec=sh $out/usr/local/115Browser/115.sh|g" $out/usr/share/applications/115.desktop
   sed -i "s|Icon=/usr/local/115Browser/res/115Browser.png|Icon=$out/usr/local/115Browser/res/115Browser.png|g" $out/usr/share/applications/115.desktop
-
-  cat > $out/usr/local/115Browser/115.sh <<EOF
-#!/bin/sh
-
-export LD_LIBRARY_PATH=$out/usr/local/115Browser:\$LD_LIBRARY_PATH
-
-# 配置
-APP_DIR=$out/usr/local/115Browser
-APP_NAME=115Browser
-APP_PATH="\${APP_DIR}/\${APP_NAME}"
-
-# 检查程序目录
-if [ ! -d "\${APP_DIR}" ]; then
-    echo "Error: \${APP_DIR} not found!"
-    exit 1
-fi
-
-# 检查程序文件
-if [ ! -f "\${APP_PATH}" ]; then
-    echo "Error: \${APP_PATH} not found!"
-    exit 1
-fi
-
-# 检查执行权限
-if [ ! -x "\${APP_PATH}" ]; then
-    echo "Error: \${APP_PATH} not executable!"
-    exit 1
-fi
-
-# 切换目录
-cd "\${APP_DIR}" || exit 1
-
-# 处理启动参数
-start_browser() {
-    local delay=\$1
-    local args=\$2
-    
-    if [ "\$delay" -gt 0 ]; then
-        echo "Waiting for \${delay} seconds before start..."
-        sleep "\$delay"
-    fi
-    
-    if [ -n "\$args" ]; then
-        "\${APP_PATH}" "\$args" >/dev/null 2>&1 &
-    else
-        "\${APP_PATH}" >/dev/null 2>&1 &
-    fi
-    
-    echo "Starting \${APP_NAME}..."
-}
-
-# 根据参数决定启动方式
-case "\$1" in
-    "update")
-        start_browser 2 "--update"
-        ;;
-    "")
-        start_browser 0
-        ;;
-    *)
-        start_browser 0 "\$1"
-        ;;
-esac
-
-exit 0
-EOF
-
+  sed -i "s|export LD_LIBRARY_PATH=/usr/local/115Browser:$LD_LIBRARY_PATH|export LD_LIBRARY_PATH=$out/usr/local/115Browser:$LD_LIBRARY_PATH|g" $out/usr/local/115Browser/115.sh
+  sed -i "s|APP_DIR=/usr/local/115Browser|APP_DIR=$out/usr/local/115Browser|g" $out/usr/local/115Browser/115.sh
+  chmod +x $out/usr/local/115Browser/115.sh
   runHook postInstall
 '';
 }
