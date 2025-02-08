@@ -1,0 +1,7 @@
+# 1. Generate Gemfile.lock
+nix-shell -p bundler --run 'bundle lock'
+
+# 2. Generate gemset.nix
+nix-shell -p bundix --run bundix
+
+# 3. Remove Gemfile.lock

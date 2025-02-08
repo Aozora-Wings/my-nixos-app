@@ -1,0 +1,5 @@
+source 'https://rubygems.org' do
+  gem 'escape_utils'
+  gem 'cgi'
+  gem 'github-linguist'
+end

@@ -1,0 +1,11 @@
+--- a/binary-parsers.cabal
++++ b/binary-parsers.cabal
+@@ -30,7 +30,7 @@ library
+                     ,   Data.Binary.Parser.Numeric
+ 
+     build-depends:      base == 4.*
+-                    ,   bytestring == 0.10.*
++                    ,   bytestring >= 0.10
+                     ,   binary == 0.8.*
+                     ,   bytestring-lexing == 0.5.*
+                     ,   scientific > 0.3

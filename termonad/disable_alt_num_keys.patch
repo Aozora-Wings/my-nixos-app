@@ -1,0 +1,23 @@
+--- a/src/Termonad/Keys.hs
++++ b/src/Termonad/Keys.hs
+@@ -117,11 +117,12 @@ removeStrangeModifiers Key{keyVal, keyMods} =
+ handleKeyPress :: TMState -> TMWindowId -> EventKey -> IO Bool
+ handleKeyPress terState tmWindowId eventKey = do
+   -- void $ showKeys eventKey
+-  keyval <- getEventKeyKeyval eventKey
+-  modifiers <- getEventKeyState eventKey
+-  let oldKey = toKey keyval (Set.fromList modifiers)
+-      newKey = removeStrangeModifiers oldKey
+-      maybeAction = Map.lookup newKey keyMap
+-  case maybeAction of
+-    Just action -> action terState tmWindowId
+-    Nothing -> pure False
++  -- keyval <- getEventKeyKeyval eventKey
++  -- modifiers <- getEventKeyState eventKey
++  -- let oldKey = toKey keyval (Set.fromList modifiers)
++  --     newKey = removeStrangeModifiers oldKey
++  --     maybeAction = Map.lookup newKey keyMap
++  -- case maybeAction of
++  --   Just action -> action terState tmWindowId
++  --   Nothing -> pure False
++  pure False
