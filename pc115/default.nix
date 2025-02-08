@@ -8,6 +8,8 @@
   systemd,
   nixUnstable,
   commonLibs,
+  makeWrapper,
+  intel-compute-runtime,
   ...}: #参数列表
 
 let
@@ -69,7 +71,9 @@ stdenv.mkDerivation {
   #passthru
   inherit pname version src meta ;
     nativeBuildInputs = [
+      intel-compute-runtime
       autoPatchelfHook
+      makeWrapper
       pkgs.dpkg
     # makeBinaryWrapper not support shell wrapper specifically for `NIXOS_OZONE_WL`.
   ];
@@ -101,6 +105,7 @@ unpackPhase = ''
     runHook preInstall
 
     # 修复.desktop文件路径
+    sed -i "2i export VK_ICD_FILENAMES=\"${needlib.vulkan-loader}/share/vulkan/icd.d/intel_icd.x86_64.json\"" $out/local/115Browser/115.sh
     sed -i "s|Exec=sh /usr/local/115Browser/115.sh|Exec=$out/local/115Browser/115.sh|g" $out/share/applications/115Browser.desktop
     sed -i "s|Icon=/usr/local/115Browser/res/115Browser.png|Icon=$out/local/115Browser/res/115Browser.png|g" $out/share/applications/115Browser.desktop
     
@@ -122,7 +127,9 @@ unpackPhase = ''
     patchelf --set-interpreter "$(cat $NIX_CC/nix-support/dynamic-linker)" \
              --set-rpath "${lib.makeLibraryPath needlib}:$out/local/115Browser" \
              $out/local/115Browser/115Browser
-    patchelf --set-rpath "${lib.makeLibraryPath [ pkgs.vulkan-loader ]}:$out/local/115Browser" $out/local/115Browser/115Browser
+      patchelf --set-rpath "${lib.makeLibraryPath [ pkgs.vulkan-loader ]}:$out/local/115Browser" \
+           --set-interpreter "$(cat $NIX_CC/nix-support/dynamic-linker)" \
+           $out/local/115Browser/115Browser
     runHook postInstall
   '';
 }
