@@ -41,13 +41,26 @@ let
     runtimeDependencies = map lib.getLib [
   ];
       needlib =  with pkgs; [
-        libdrm
-        e2fsprogs
-        p11-kit
-        alsa-lib
-        glib
-        libglvnd
-        libgpg-error
+    libdrm
+    e2fsprogs
+    p11-kit
+    alsa-lib
+    glib
+    libglvnd
+    libgpg-error
+    dbus
+    atk
+    at-spi2-core
+    cups
+    libXcomposite
+    libXdamage
+    libXfixes
+    libXrandr
+    gbm
+    xkbcommon
+    pango
+    cairo
+    libidn2
     ];
 in
 stdenv.mkDerivation {
