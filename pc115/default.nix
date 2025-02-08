@@ -121,7 +121,7 @@ unpackPhase = ''
     patchelf --set-interpreter "$(cat $NIX_CC/nix-support/dynamic-linker)" \
              --set-rpath "${lib.makeLibraryPath needlib}:$out/local/115Browser" \
              $out/local/115Browser/115Browser
-    patchelf --set-rpath "${lib.makeLibraryPath [ vulkan-loader ]}:$out/local/115Browser" $out/local/115Browser/115Browser
+    patchelf --set-rpath "${lib.makeLibraryPath [ pkgs.vulkan-loader ]}:$out/local/115Browser" $out/local/115Browser/115Browser
     runHook postInstall
   '';
 }
