@@ -56,7 +56,7 @@ let
     xorg.libXdamage
     xorg.libXfixes
     xorg.libXrandr
-    gbm
+    mesa
     libxkbcommon
     pango
     cairo
