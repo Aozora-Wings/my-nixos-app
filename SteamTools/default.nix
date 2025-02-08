@@ -63,7 +63,7 @@ let
     pkgs.fontconfig
     pkgs.lttng-ust_2_12
     pkgs.nss_latest
-    pkgs.gnome.zenity
+    pkgs.zenity
     pkgs.xorg.libX11
     pkgs.xorg.libICE
     pkgs.xorg.libSM
@@ -96,7 +96,7 @@ stdenv.mkDerivation {
     pkgs.zlib
     pkgs.fontconfig
     pkgs.lttng-ust_2_12
-    pkgs.gnome.zenity
+    pkgs.zenity
     pkgs.xorg.libX11
     pkgs.xorg.libICE
     pkgs.xorg.libSM
@@ -118,7 +118,7 @@ map lib.getLib [
   pkgs.fontconfig
   pkgs.lttng-ust_2_12
   pkgs.nss_latest
-  pkgs.gnome.zenity
+  pkgs.zenity
   pkgs.xorg.libX11
   pkgs.xorg.libICE
   pkgs.xorg.libSM

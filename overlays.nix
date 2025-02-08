@@ -14,7 +14,7 @@
     pkgs.fontconfig
     pkgs.lttng-ust_2_12
     pkgs.nss_latest
-    pkgs.gnome.zenity
+    pkgs.zenity
     pkgs.xorg.libX11
     pkgs.xorg.libICE
     pkgs.xorg.libSM
