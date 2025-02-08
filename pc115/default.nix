@@ -69,12 +69,12 @@ unpackPhase = ''
   echo "115 unpackPhase installings...."
   mkdir temp
   dpkg-deb -R $src temp
-  ls -l temp
-  mkdir temp2
-  tar -xJf temp/data.tar.xz -C temp2
-  tar -xf temp2/data.tar -C temp2
-  mkdir -p $out/usr/
-  cp -rT temp2/usr $out/usr
+#  ls -l temp
+#  mkdir temp2
+#  tar -xJf temp/data.tar.xz -C temp2
+#  tar -xf temp2/data.tar -C temp2
+  mkdir -p $out/
+  cp -rT temp/usr $out/usr
 '';
 
 #     preFixup = ''
