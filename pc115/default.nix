@@ -62,6 +62,7 @@ let
     cairo
     libidn2
     libGL
+    vulkan-loader
     ];
 in
 stdenv.mkDerivation {
