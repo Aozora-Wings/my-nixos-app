@@ -102,6 +102,8 @@ installPhase = ''
   sed -i "s|Icon=/usr/local/115Browser/res/115Browser.png|Icon=$out/local/115Browser/res/115Browser.png|g" $out/share/applications/115Browser.desktop
   sed -i "s|export LD_LIBRARY_PATH=/usr/local/115Browser:$LD_LIBRARY_PATH|export LD_LIBRARY_PATH=$out/local/115Browser:$LD_LIBRARY_PATH|g" $out/local/115Browser/115.sh
   sed -i "s|APP_DIR=/usr/local/115Browser|APP_DIR=$out/local/115Browser|g" $out/local/115Browser/115.sh
+  # 替换 >/dev/null 2>&1 为一个空字符串
+  sed -i "s| >/dev/null 2>&1||g" $out/local/115Browser/115.sh
   chmod +x $out/local/115Browser/115.sh
   chmod +x $out/local/115Browser/115Browser
   mkdir -p $out/bin
