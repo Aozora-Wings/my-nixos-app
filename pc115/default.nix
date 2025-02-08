@@ -70,7 +70,6 @@ stdenv.mkDerivation {
   inherit pname version src meta ;
     nativeBuildInputs = [
       autoPatchelfHook
-      pkgs.wrapProgram
       pkgs.dpkg
     # makeBinaryWrapper not support shell wrapper specifically for `NIXOS_OZONE_WL`.
   ];
@@ -92,12 +91,7 @@ unpackPhase = ''
   mkdir -p $out/
   cp -rT temp/usr $out
 '';
-postFixup = ''
-  wrapProgram $out/bin/115Browser \
-    --set LIBGL_DEBUG "verbose" \
-    --set ENABLE_VULKAN "1" \
-    --set NIXOS_OZONE_WL "1"
-'';
+
 #     preFixup = ''
     
 #   autoPatchelfLibs+=(${lttng-ust}/lib)
@@ -127,7 +121,7 @@ postFixup = ''
     patchelf --set-interpreter "$(cat $NIX_CC/nix-support/dynamic-linker)" \
              --set-rpath "${lib.makeLibraryPath needlib}:$out/local/115Browser" \
              $out/local/115Browser/115Browser
-
+    patchelf --set-rpath "${lib.makeLibraryPath [ vulkan-loader ]}:$out/local/115Browser" $out/local/115Browser/115Browser
     runHook postInstall
   '';
 }
