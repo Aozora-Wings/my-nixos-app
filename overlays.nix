@@ -22,7 +22,7 @@
       ];
 
    in {
-      wallpaperengine-steam = prev.callPackage ./wallpaper-steam { inherit commonLibs; };
+      wallpaperengine-steam = prev.callPackage ./wallpaper-steam { };
       verysync-my = prev.callPackage ./verysync { inherit commonLibs; };
       Ipanel-my = prev.callPackage ./1panel { inherit commonLibs; };
       qq-my=prev.callPackage ./qq { };
