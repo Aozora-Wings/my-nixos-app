@@ -1,6 +1,7 @@
 [
   ( #self: super:
     final: prev:
+  inherit (prev.kdePackages) qtmultimedia qtwebchannel qtwebengine qtwebsockets;
     let
     commonLibs = with prev; [
     pkgs.ncurses
@@ -22,10 +23,18 @@
       ];
 
    in {
-      wallpaperengine-steam = prev.callPackage ./wallpaper-steam {
-  inherit (prev.kdePackages) mkKdeDerivation kpackage extra-cmake-modules libplasma;
-  inherit (prev) lz4 mpv-unwrapped python3 qtbase qtmultimedia qtwebchannel qtwebengine qtwebsockets;
-};
+  wallpaperengine-steam = prev.libsForQt6.callPackage ./wallpaper-steam {
+    inherit (prev) lz4 mpv-unwrapped python3;
+    inherit (prev.kdePackages) 
+      mkKdeDerivation 
+      kpackage 
+      extra-cmake-modules 
+      libplasma
+      qtbase  # 如果 qtbase 也在 kdePackages 中
+    ;
+    # 显式传递 Qt6 组件（因为它们在 kdePackages 下）
+    inherit qtmultimedia qtwebchannel qtwebengine qtwebsockets;
+  };
       verysync-my = prev.callPackage ./verysync { inherit commonLibs; };
       Ipanel-my = prev.callPackage ./1panel { inherit commonLibs; };
       qq-my=prev.callPackage ./qq { };
