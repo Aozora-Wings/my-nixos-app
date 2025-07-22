@@ -1,4 +1,5 @@
 {
+  wrapPython,
   extra-cmake-modules,
   fetchFromGitHub,
   kpackage,
