@@ -26,7 +26,6 @@
   wallpaperengine-steam = prev.kdePackages.callPackage ./wallpaper-steam {
     inherit (prev) lz4 mpv-unwrapped python3;
     inherit (prev.python3Packages) wrapPython;
-    makeWrapper = prev.makeWrapper;
     # 不需要手动传 Qt/KDE 依赖，kdePackages 会自动处理
   };
       verysync-my = prev.callPackage ./verysync { inherit commonLibs; };
