@@ -1,8 +1,8 @@
 [
   ( #self: super:
     final: prev:
-  inherit (prev.kdePackages) qtmultimedia qtwebchannel qtwebengine qtwebsockets;
     let
+    inherit (prev.kdePackages) qtmultimedia qtwebchannel qtwebengine qtwebsockets;
     commonLibs = with prev; [
     pkgs.ncurses
     pkgs.icu74
