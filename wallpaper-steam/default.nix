@@ -14,18 +14,17 @@
 , qtwebsockets
 , wrapPython
 , makeWrapper
-,extra-cmake-modules
+, extra-cmake-modules
 }:
 
 let
   pythonEnv = python3.withPackages (ps: with ps; [
     websockets
-    pyqt5  # 如果需要 Qt Python 绑定
   ]);
 in
 
 mkKdeDerivation {
-  pname = "wallpaper-engine-kde-plugin-my";
+  pname = "wallpaper-engine-kde-plugin";
   version = "0.5.5-unstable-2024-11-03";
 
   src = fetchFromGitHub {
@@ -51,7 +50,7 @@ mkKdeDerivation {
     libplasma
     lz4
     mpv-unwrapped
-    pythonEnv  # 将 Python 环境作为构建输入
+    pythonEnv
   ];
 
   extraCmakeFlags = [
@@ -69,13 +68,13 @@ mkKdeDerivation {
   postInstall = ''
     cd $out/share/plasma/wallpapers/com.github.catsout.wallpaperEngineKde
     
-    # 设置 Python 脚本权限
+    # 设置可执行权限
     chmod +x ./contents/pyext.py
     
     # 修正 shebang
     patchShebangs ./contents/pyext.py
     
-    # 包装 Python 脚本，确保运行时能找到依赖
+    # 包装 Python 脚本
     wrapProgram ./contents/pyext.py \
       --prefix PYTHONPATH : "${pythonEnv}/${python3.sitePackages}" \
       --prefix PATH : "${lib.makeBinPath [ python3 ]}"
@@ -92,6 +91,5 @@ mkKdeDerivation {
     homepage = "https://github.com/catsout/wallpaper-engine-kde-plugin";
     license = licenses.gpl2Only;
     maintainers = with maintainers; [ macronova ];
-    teams = [ ];
   };
 }
