@@ -23,8 +23,8 @@
 
    in {
       wallpaperengine-steam = prev.callPackage ./wallpaper-steam {
-  inherit (prev) lz4 mpv-unwrapped python3 qtbase;
-  inherit (prev.kdePackages) kpackage extra-cmake-modules libplasma;  # 明确传递 KDE 依赖
+  inherit (prev.kdePackages) mkKdeDerivation kpackage extra-cmake-modules libplasma;
+  inherit (prev) lz4 mpv-unwrapped python3 qtbase qtmultimedia qtwebchannel qtwebengine qtwebsockets;
   inherit commonLibs;# 其他通用依赖...
 };
       verysync-my = prev.callPackage ./verysync { inherit commonLibs; };
