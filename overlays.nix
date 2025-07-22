@@ -22,6 +22,7 @@
       ];
 
    in {
+      wallpaperengine-my = prev.callPackage ./wallpaper-steam { inherit commonLibs; };
       verysync-my = prev.callPackage ./verysync { inherit commonLibs; };
       Ipanel-my = prev.callPackage ./1panel { inherit commonLibs; };
       wallpaperengine-my = prev.callPackage ./linux-WallpaperEngine { };
