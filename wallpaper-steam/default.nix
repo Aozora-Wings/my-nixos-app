@@ -14,6 +14,7 @@
 , qtwebsockets
 , wrapPython
 , makeWrapper
+,extra-cmake-modules
 }:
 
 let
