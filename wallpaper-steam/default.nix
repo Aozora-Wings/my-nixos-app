@@ -54,15 +54,17 @@ mkKdeDerivation {
     (lib.cmakeFeature "Qt6_DIR" "${qtbase}/lib/cmake/Qt6")
   ];
 
-  postInstall = ''
-    cd $out/share/plasma/wallpapers/com.github.catsout.wallpaperEngineKde
-    chmod +x ./contents/pyext.py
-      patchShebangs --build ./contents/pyext.py \
-    --set PYTHONPATH ${python3.withPackages (ps: with ps; [ websockets ])}/${python3.sitePackages}
-    substituteInPlace ./contents/ui/Pyext.qml \
-       --replace-fail NIX_STORE_PACKAGE_PATH ${placeholder "out"}
-    cd -
-  '';
+postInstall = ''
+  cd $out/share/plasma/wallpapers/com.github.catsout.wallpaperEngineKde
+  chmod +x ./contents/pyext.py
+  
+  wrapProgram ./contents/pyext.py \
+    --prefix PYTHONPATH : "${python3.withPackages (ps: [ ps.websockets ])}/${python3.sitePackages}"
+  
+  substituteInPlace ./contents/ui/Pyext.qml \
+    --replace-fail NIX_STORE_PACKAGE_PATH ${placeholder "out"}
+  cd -
+'';
 
   meta = with lib; {
     description = "KDE wallpaper plugin integrating Wallpaper Engine";
