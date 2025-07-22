@@ -1,30 +1,22 @@
-{ lib
-, fetchFromGitHub
-, kpackage
-, libplasma
-, lz4
-, mkKdeDerivation
-, mpv-unwrapped
-, pkg-config
-, python3
-, qtbase
-, qtmultimedia
-, qtwebchannel
-, qtwebengine
-, qtwebsockets
-, wrapPython
-, makeWrapper
-, extra-cmake-modules
+{
+  extra-cmake-modules,
+  fetchFromGitHub,
+  kpackage,
+  libplasma,
+  lib,
+  lz4,
+  mkKdeDerivation,
+  mpv-unwrapped,
+  pkg-config,
+  python3,
+  qtbase,
+  qtmultimedia,
+  qtwebchannel,
+  qtwebengine,
+  qtwebsockets,
 }:
-
-let
-  pythonEnv = python3.withPackages (ps: with ps; [
-    websockets
-  ]);
-in
-
 mkKdeDerivation {
-  pname = "wallpaper-engine-kde-plugin-my";
+  pname = "wallpaper-engine-kde-plugin";
   version = "0.5.5-unstable-2024-11-03";
 
   src = fetchFromGitHub {
@@ -37,20 +29,18 @@ mkKdeDerivation {
 
   patches = [ ./nix-plugin.patch ];
 
-  nativeBuildInputs = [
+  extraNativeBuildInputs = [
     kpackage
     pkg-config
-    python3
-    wrapPython
-    makeWrapper
+    (python3.withPackages (ps: with ps; [ websockets ]))
   ];
 
-  buildInputs = [
+  extraBuildInputs = [
     extra-cmake-modules
     libplasma
     lz4
     mpv-unwrapped
-    pythonEnv
+  (python3.withPackages (ps: with ps; [ websockets ]))
   ];
 
   extraCmakeFlags = [
@@ -65,31 +55,22 @@ mkKdeDerivation {
     (lib.cmakeFeature "Qt6_DIR" "${qtbase}/lib/cmake/Qt6")
   ];
 
-  postInstall = ''
-    cd $out/share/plasma/wallpapers/com.github.catsout.wallpaperEngineKde
-    
-    # 设置可执行权限
-    chmod +x ./contents/pyext.py
-    
-    # 修正 shebang
-    patchShebangs ./contents/pyext.py
-    
-    # 包装 Python 脚本
-    wrapProgram ./contents/pyext.py \
-      --prefix PYTHONPATH : "${pythonEnv}/${python3.sitePackages}" \
-      --prefix PATH : "${lib.makeBinPath [ python3 ]}"
-    
-    # 替换 Nix 存储路径
-    substituteInPlace ./contents/ui/Pyext.qml \
-       --replace-fail NIX_STORE_PACKAGE_PATH "$out"
-    
-    cd -
-  '';
+postInstall = ''
+  cd $out/share/plasma/wallpapers/com.github.catsout.wallpaperEngineKde
+  substituteInPlace ./contents/pyext.py \
+    --replace '#!/bin/python3' '#!${python3}/bin/python3'
+  chmod +x ./contents/pyext.py
+  patchShebangs ./contents/pyext.py
+  substituteInPlace ./contents/ui/Pyext.qml \
+    --replace-fail NIX_STORE_PACKAGE_PATH ${placeholder "out"}
+  cd -
+'';
 
   meta = with lib; {
     description = "KDE wallpaper plugin integrating Wallpaper Engine";
     homepage = "https://github.com/catsout/wallpaper-engine-kde-plugin";
     license = licenses.gpl2Only;
     maintainers = with maintainers; [ macronova ];
+    teams = [ ];
   };
 }
