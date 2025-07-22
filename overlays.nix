@@ -22,10 +22,9 @@
       ];
 
    in {
-      wallpaperengine-my = prev.callPackage ./wallpaper-steam { inherit commonLibs; };
+      wallpaperengine-steam = prev.callPackage ./wallpaper-steam { inherit commonLibs; };
       verysync-my = prev.callPackage ./verysync { inherit commonLibs; };
       Ipanel-my = prev.callPackage ./1panel { inherit commonLibs; };
-      wallpaperengine-my = prev.callPackage ./linux-WallpaperEngine { };
       qq-my=prev.callPackage ./qq { };
       pc115-my=prev.callPackage ./pc115 { inherit commonLibs; };
       osu-my=prev.callPackage ./osu { };
