@@ -16,7 +16,7 @@
   qtwebsockets,
 }:
 mkKdeDerivation {
-  pname = "wallpaper-engine-kde-plugin";
+  pname = "wallpaper-engine-kde-plugin-my";
   version = "0.5.5-unstable-2024-11-03";
 
   src = fetchFromGitHub {
