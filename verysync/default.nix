@@ -14,12 +14,12 @@ let
   #unstable = import (builtins.fetchTarball "https://nixos.org/channels/nixos-unstable/nixexprs.tar.xz") { config = { allowUnfree = true; }; };
   #unstable=https://nixos.org/channels/nixos-unstable
   pname = "verysync";
-  version = "2.20.1";
+  version = "2.21.3";
   src = {
     x86_64-linux = fetchurl {
       #url = "https://github.com/ppy/osu/releases/download/${version}/osu.AppImage";
       url = "https://dl-cn.verysync.com/releases/v${version}/verysync-linux-amd64-v${version}.tar.gz";
-      sha256 = "33932ACD8B47B72985A0A80CE218839B101E3AAAA2044108CE58950A4D8719A9";
+      sha256 = "";
     };
   }.${stdenv.system} or (throw "${pname}-${version}: ${stdenv.system} is unsupported.");
 
