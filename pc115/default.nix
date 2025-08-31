@@ -21,7 +21,7 @@ let
     x86_64-linux = fetchurl {
       #url = "https://github.com/ppy/osu/releases/download/${version}/osu.AppImage";
       url = "https://down.115.com/client/115pc/lin/115br_v${version}.deb";
-      sha256 = "";
+      sha256 = "sha256-E5+0421/SPHheTF+WtK9ixKHnnHTxP+Z2iaGVmG0/Eg=";
     };
   }.${stdenv.system} or (throw "${pname}-${version}: ${stdenv.system} is unsupported.");
 
