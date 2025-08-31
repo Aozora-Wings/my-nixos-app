@@ -16,12 +16,12 @@ let
   #unstable = import (builtins.fetchTarball "https://nixos.org/channels/nixos-unstable/nixexprs.tar.xz") { config = { allowUnfree = true; }; };
   #unstable=https://nixos.org/channels/nixos-unstable
   pname = "115Browser";
-  version = "35.3.0.2";
+  version = "36.0.0";
   src = {
     x86_64-linux = fetchurl {
       #url = "https://github.com/ppy/osu/releases/download/${version}/osu.AppImage";
       url = "https://down.115.com/client/115pc/lin/115br_v${version}.deb";
-      sha256 = "sha256-R8rn8q637KcXiKFdEI89t4iX248EIkQwzLdlkmmHSJ8=";
+      sha256 = "";
     };
   }.${stdenv.system} or (throw "${pname}-${version}: ${stdenv.system} is unsupported.");
 
