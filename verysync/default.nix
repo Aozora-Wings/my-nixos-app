@@ -19,7 +19,7 @@ let
     x86_64-linux = fetchurl {
       #url = "https://github.com/ppy/osu/releases/download/${version}/osu.AppImage";
       url = "https://dl-cn.verysync.com/releases/v${version}/verysync-linux-amd64-v${version}.tar.gz";
-      sha256 = "";
+      sha256 = "sha256-NA7yTCfkqk31pSgkxj+PtAeUfnUXRnPZTBjfSoZkKHs=";
     };
   }.${stdenv.system} or (throw "${pname}-${version}: ${stdenv.system} is unsupported.");
 
