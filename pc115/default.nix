@@ -67,11 +67,14 @@ let
     xdg-desktop-portal-hyprland
   ];
 
-  # 输入法相关库
+  # 正确的输入法相关库
   inputMethodLibs = with pkgs; [
     fcitx5
+    fcitx5-configtool
     fcitx5-gtk
-    fcitx5-qt
+    #libsForQt5.fcitx5-qt  # Qt5 版本
+    # 或者如果需要 Qt6: 
+    kdePackages.fcitx5-qt
     ibus
     ibus-libpinyin
   ];
@@ -116,7 +119,7 @@ stdenv.mkDerivation {
     # Vulkan 配置
     export VK_ICD_FILENAMES="${pkgs.vulkan-loader}/share/vulkan/icd.d/intel_icd.x86_64.json"
 
-    # 库路径配置
+    # 库路径配置 - 使用正确的路径
     export LD_LIBRARY_PATH=${lib.makeLibraryPath needlib}:${lib.makeLibraryPath inputMethodLibs}:\$LD_LIBRARY_PATH
 
     # 应用目录配置
