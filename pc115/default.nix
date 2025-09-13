@@ -1,25 +1,23 @@
-{ lib,
-  stdenv,
-  fetchurl,
-  fetchzip,
-  autoPatchelfHook,
-  dotnet-sdk_8,
-  pkgs,
-  systemd,
-  nixUnstable,
-  commonLibs,
-  makeWrapper,
-  intel-compute-runtime,
-  ...}: #参数列表
+{ lib
+, stdenv
+, fetchurl
+, fetchzip
+, autoPatchelfHook
+, dotnet-sdk_8
+, pkgs
+, systemd
+, nixUnstable
+, commonLibs
+, makeWrapper
+, intel-compute-runtime
+, ...
+}:
 
 let
-  #unstable = import (builtins.fetchTarball "https://nixos.org/channels/nixos-unstable/nixexprs.tar.xz") { config = { allowUnfree = true; }; };
-  #unstable=https://nixos.org/channels/nixos-unstable
   pname = "115Browser";
   version = "36.0.0";
   src = {
     x86_64-linux = fetchurl {
-      #url = "https://github.com/ppy/osu/releases/download/${version}/osu.AppImage";
       url = "https://down.115.com/client/115pc/lin/115br_v${version}.deb";
       sha256 = "sha256-E5+0421/SPHheTF+WtK9ixKHnnHTxP+Z2iaGVmG0/Eg=";
     };
@@ -31,7 +29,7 @@ let
     license = with lib.licenses; [
       mit
       cc-by-nc-40
-      unfreeRedistributable # osu-framework contains libbass.so in repository
+      unfreeRedistributable
     ];
     sourceProvenance = with lib.sourceTypes; [ binaryNativeCode ];
     maintainers = with lib.maintainers; [ delan spacefault stepbrobd ];
@@ -39,10 +37,7 @@ let
     platforms = [ "x86_64-linux" ];
   };
 
-  #passthru.updateScript = ./update-bin.sh;
-    runtimeDependencies = map lib.getLib [
-  ];
-      needlib =  with pkgs; [
+  needlib = with pkgs; [
     libdrm
     e2fsprogs
     p11-kit
@@ -65,71 +60,149 @@ let
     libidn2
     libGL
     vulkan-loader
-    ];
+
+    # 添加 portal 相关依赖
+    xdg-desktop-portal
+    xdg-desktop-portal-gtk
+    xdg-desktop-portal-hyprland
+  ];
+
+  # 输入法相关库
+  inputMethodLibs = with pkgs; [
+    fcitx5
+    fcitx5-gtk
+    fcitx5-qt
+    ibus
+    ibus-libpinyin
+  ];
+
 in
 stdenv.mkDerivation {
-  #passthru
-  inherit pname version src meta ;
-    nativeBuildInputs = [
-      intel-compute-runtime
-      autoPatchelfHook
-      makeWrapper
-      pkgs.dpkg
-    # makeBinaryWrapper not support shell wrapper specifically for `NIXOS_OZONE_WL`.
-  ];
-  #构建时所需要的依赖
+  inherit pname version src meta;
 
-    buildInputs = commonLibs ++ needlib;
- #运行时所需要的依赖
-    runtimeDependencies = map lib.getLib [
+  nativeBuildInputs = [
+    intel-compute-runtime
+    autoPatchelfHook
+    makeWrapper
+    pkgs.dpkg
   ];
-  #解压缩
-unpackPhase = ''
-  echo "115 unpackPhase installings...."
-  mkdir temp
-  dpkg-deb -R $src temp
-#  ls -l temp
-#  mkdir temp2
-#  tar -xJf temp/data.tar.xz -C temp2
-#  tar -xf temp2/data.tar -C temp2
-  mkdir -p $out/
-  cp -rT temp/usr $out
-'';
 
-#     preFixup = ''
-    
-#   autoPatchelfLibs+=(${lttng-ust}/lib)
-#   echo "autoPatchelfLibs: $autoPatchelfLibs"
-# '';
+  buildInputs = commonLibs ++ needlib ++ inputMethodLibs;
+
+  unpackPhase = ''
+    echo "115 unpackPhase installing...."
+    mkdir temp
+    dpkg-deb -R $src temp
+    mkdir -p $out/
+    cp -rT temp/usr $out
+  '';
+
   installPhase = ''
-    runHook preInstall
+        runHook preInstall
 
-    # 修复.desktop文件路径
-    sed -i "2i export VK_ICD_FILENAMES=\"${pkgs.vulkan-loader}/share/vulkan/icd.d/intel_icd.x86_64.json\"" $out/local/115Browser/115.sh
-    sed -i "s|Exec=sh /usr/local/115Browser/115.sh|Exec=$out/local/115Browser/115.sh|g" $out/share/applications/115Browser.desktop
-    sed -i "s|Icon=/usr/local/115Browser/res/115Browser.png|Icon=$out/local/115Browser/res/115Browser.png|g" $out/share/applications/115Browser.desktop
-    
-    # 修复启动脚本
-    sed -i "s|export LD_LIBRARY_PATH=/usr/local/115Browser:\$LD_LIBRARY_PATH|export LD_LIBRARY_PATH=${lib.makeLibraryPath needlib}:\$LD_LIBRARY_PATH|g" $out/local/115Browser/115.sh
-    sed -i "s|APP_DIR=/usr/local/115Browser|APP_DIR=$out/local/115Browser|g" $out/local/115Browser/115.sh
-    sed -i "s| >/dev/null 2>&1||g" $out/local/115Browser/115.sh
-    sed -i 's|exec "$APP_DIR/115Browser"|exec "$APP_DIR/115Browser" --use-gl=desktop|g' $out/local/115Browser/115.sh
-    
-    # 设置可执行权限
-    chmod +x $out/local/115Browser/115.sh
-    chmod +x $out/local/115Browser/115Browser
-    
-    # 创建二进制链接
-    mkdir -p $out/bin
-    ln -s $out/local/115Browser/115.sh $out/bin/115.sh
+        # 创建新的启动脚本，保留原始环境变量
+        cat > $out/local/115Browser/115.sh << 'EOF'
+    #!/bin/sh
 
-    # 修复ELF文件的依赖路径
-    patchelf --set-interpreter "$(cat $NIX_CC/nix-support/dynamic-linker)" \
-             --set-rpath "${lib.makeLibraryPath needlib}:$out/local/115Browser" \
-             $out/local/115Browser/115Browser
-      patchelf --set-rpath "${lib.makeLibraryPath [ pkgs.vulkan-loader ]}:$out/local/115Browser" \
-           --set-interpreter "$(cat $NIX_CC/nix-support/dynamic-linker)" \
-           $out/local/115Browser/115Browser
-    runHook postInstall
+    # 保留所有父进程的环境变量（特别是输入法相关）
+    # 仅添加必要的浏览器特定配置
+    export XDG_CURRENT_DESKTOP=hyprland
+    export GTK_USE_PORTAL=1
+    export XDG_SESSION_TYPE=wayland
+    export QT_QPA_PLATFORM=wayland
+    export MOZ_ENABLE_WAYLAND=1
+    export NO_AT_BRIDGE=1
+
+    # Vulkan 配置
+    export VK_ICD_FILENAMES="${pkgs.vulkan-loader}/share/vulkan/icd.d/intel_icd.x86_64.json"
+
+    # 库路径配置
+    export LD_LIBRARY_PATH=${lib.makeLibraryPath needlib}:${lib.makeLibraryPath inputMethodLibs}:\$LD_LIBRARY_PATH
+
+    # 应用目录配置
+    APP_DIR=$out/local/115Browser
+    APP_NAME=115Browser
+    APP_PATH="\$APP_DIR/\$APP_NAME"
+
+    # 检查程序目录和文件
+    if [ ! -d "\$APP_DIR" ]; then
+        echo "Error: \$APP_DIR not found!"
+        exit 1
+    fi
+
+    if [ ! -f "\$APP_PATH" ]; then
+        echo "Error: \$APP_PATH not found!"
+        exit 1
+    fi
+
+    if [ ! -x "\$APP_PATH" ]; then
+        echo "Error: \$APP_PATH not executable!"
+        exit 1
+    fi
+
+    cd "\$APP_DIR" || exit 1
+
+    # 处理启动参数
+    start_browser() {
+        local delay=\$1
+        local args=\$2
+    
+        if [ "\$delay" -gt 0 ]; then
+            echo "Waiting for \$delay seconds before start..."
+            sleep "\$delay"
+        fi
+    
+        if [ -n "\$args" ]; then
+            "\$APP_PATH" "\$args" &
+        else
+            "\$APP_PATH" &
+        fi
+    
+        echo "Starting \$APP_NAME..."
+    }
+
+    # 根据参数决定启动方式
+    case "\$1" in
+        "update")
+            start_browser 2 "--update"
+            ;;
+        "")
+            start_browser 0
+            ;;
+        *)
+            start_browser 0 "\$1"
+            ;;
+    esac
+
+    exit 0
+    EOF
+
+        # 修复.desktop文件路径
+        sed -i "s|Exec=sh /usr/local/115Browser/115.sh|Exec=$out/local/115Browser/115.sh|g" $out/share/applications/115Browser.desktop
+        sed -i "s|Icon=/usr/local/115Browser/res/115Browser.png|Icon=$out/local/115Browser/res/115Browser.png|g" $out/share/applications/115Browser.desktop
+    
+        # 设置可执行权限
+        chmod +x $out/local/115Browser/115.sh
+        chmod +x $out/local/115Browser/115Browser
+    
+        # 创建二进制链接
+        mkdir -p $out/bin
+        ln -s $out/local/115Browser/115.sh $out/bin/115.sh
+
+        # 修复ELF文件的依赖路径
+        patchelf --set-interpreter "$(cat $NIX_CC/nix-support/dynamic-linker)" \
+                 --set-rpath "${lib.makeLibraryPath (needlib ++ inputMethodLibs)}:$out/local/115Browser" \
+                 $out/local/115Browser/115Browser
+
+        # 使用 makeWrapper 确保环境变量正确传递
+        makeWrapper $out/local/115Browser/115Browser $out/bin/115Browser \
+          --prefix LD_LIBRARY_PATH : "${lib.makeLibraryPath (needlib ++ inputMethodLibs)}" \
+          --prefix PATH : "${lib.makeBinPath [pkgs.xdg-desktop-portal pkgs.xdg-desktop-portal-gtk]}" \
+          --set VK_ICD_FILENAMES "${pkgs.vulkan-loader}/share/vulkan/icd.d/intel_icd.x86_64.json" \
+          --set XDG_CURRENT_DESKTOP hyprland \
+          --set GTK_USE_PORTAL 1 \
+          --set XDG_SESSION_TYPE wayland
+
+        runHook postInstall
   '';
 }
