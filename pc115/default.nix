@@ -75,8 +75,6 @@ let
     #libsForQt5.fcitx5-qt  # Qt5 版本
     # 或者如果需要 Qt6: 
     kdePackages.fcitx5-qt
-    ibus
-    ibus-libpinyin
   ];
 
 in
