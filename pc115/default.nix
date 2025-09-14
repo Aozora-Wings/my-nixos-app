@@ -123,7 +123,6 @@ stdenv.mkDerivation {
     echo 'APP_DIR="'$out'/local/115Browser"' >> $out/local/115Browser/115.sh
     cat >> $out/local/115Browser/115.sh << "EOF"
           # 应用目录配置
-          APP_DIR="$out/local/115Browser"
           APP_NAME=115Browser
           APP_PATH="$APP_DIR/$APP_NAME"
 
