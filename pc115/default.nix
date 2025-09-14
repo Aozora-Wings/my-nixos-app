@@ -121,7 +121,7 @@ stdenv.mkDerivation {
           export LD_LIBRARY_PATH="/run/current-system/sw/lib:$LD_LIBRARY_PATH"
     EOF
     echo 'APP_DIR="'$out'/local/115Browser"' >> $out/local/115Browser/115.sh
-    cat > $out/local/115Browser/115.sh << "EOF"
+    cat >> $out/local/115Browser/115.sh << "EOF"
           # 应用目录配置
           APP_DIR="$out/local/115Browser"
           APP_NAME=115Browser
