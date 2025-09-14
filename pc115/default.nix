@@ -128,6 +128,7 @@ stdenv.mkDerivation {
             # 应用目录配置
             APP_NAME=115Browser
             APP_PATH="\$APP_DIR/\$APP_NAME"
+            echo $APP_PATH
 
             # 检查程序目录和文件
             if [ ! -d "\$APP_DIR" ]; then
