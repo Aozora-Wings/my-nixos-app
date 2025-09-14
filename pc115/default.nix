@@ -72,9 +72,9 @@ let
     fcitx5
     fcitx5-configtool
     fcitx5-gtk
-    #libsForQt5.fcitx5-qt  # Qt5 版本
+    libsForQt5.fcitx5-qt # Qt5 版本
     # 或者如果需要 Qt6: 
-    kdePackages.fcitx5-qt
+    #kdePackages.fcitx5-qt
   ];
 
 in
