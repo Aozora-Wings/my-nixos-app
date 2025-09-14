@@ -38,30 +38,73 @@ let
   };
 
   needlib = with pkgs; [
-    libdrm
-    e2fsprogs
-    p11-kit
-    alsa-lib
+    # 基本系统库
+    glibc
     glib
+    gcc-unwrapped.lib
+
+    # 图形相关库
+    mesa
     libglvnd
-    libgpg-error
-    dbus
-    atk
-    at-spi2-core
-    cups
-    xorg.libXcomposite
+    libGL
+    libGLU
+    vulkan-loader
+    vulkan-validation-layers
+
+    # X11 相关（即使使用 Wayland，很多应用仍然需要 X11 库）
+    xorg.libX11
+    xorg.libXext
     xorg.libXdamage
     xorg.libXfixes
     xorg.libXrandr
-    mesa
-    libxkbcommon
+    xorg.libXcomposite
+    xorg.libXcursor
+    xorg.libXi
+    xorg.libXrender
+    xorg.libxcb
+    xorg.libXau
+    xorg.libXdmcp
+
+    # 多媒体和音频
+    alsa-lib
+    libpulseaudio
+    libdrm
+    libva
+    ffmpeg
+
+    # 网络和安全
+    nss
+    nspr
+    openssl
+    libsecret
+    p11-kit
+
+    # 字体和文本
+    freetype
+    fontconfig
+    harfbuzz
     pango
     cairo
-    libidn2
-    libGL
-    vulkan-loader
+    libpng
+    libjpeg
+    libtiff
+    libwebp
 
-    # 添加 portal 相关依赖
+    # 其他必要库
+    zlib
+    bzip2
+    expat
+    dbus
+    atk
+    at-spi2-core
+    at-spi2-atk
+    cups
+    libxkbcommon
+    libidn2
+    e2fsprogs
+    libgpg-error
+
+    # Portal 相关
     xdg-desktop-portal
     xdg-desktop-portal-gtk
     xdg-desktop-portal-hyprland
