@@ -146,7 +146,7 @@ stdenv.mkDerivation {
 
       # 创建新的启动脚本，保留原始环境变量
           cat > $out/local/115Browser/115.sh << "EOF"
-          #!/bin/sh
+          #!${pkgs.bash}/bin/bash
 
           # 保留所有父进程的环境变量（特别是输入法相关）
           # 仅添加必要的浏览器特定配置
@@ -156,7 +156,10 @@ stdenv.mkDerivation {
           export QT_QPA_PLATFORM=wayland
           export MOZ_ENABLE_WAYLAND=1
           export NO_AT_BRIDGE=1
-
+          export XMODIFIERS="fcitx5"
+          export GTK_IM_MODULE="fcitx5"
+          export INPUT_METHOD="fcitx5"
+          export QT_IM_MODULE="fcitx5"
           # Vulkan 配置
           export VK_ICD_FILENAMES="/run/current-system/sw/share/vulkan/icd.d/intel_icd.x86_64.json"
 
