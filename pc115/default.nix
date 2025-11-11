@@ -227,7 +227,7 @@ stdenv.mkDerivation {
 
     # 使用 makeWrapper 确保环境变量正确传递
     makeWrapper $out/local/115Browser/115Browser $out/bin/115Browser \
-      --prefix LD_LIBRARY_PATH : "${lib.makeLibraryPath (needlib ++ inputMethodLibs)}:/run/opengl-driver/lib" \
+      --prefix LD_LIBRARY_PATH : "${pkgs.libglvnd}/lib:${pkgs.mesa.drivers}/lib:/run/opengl-driver/lib" \
       --prefix PATH : "${lib.makeBinPath [pkgs.xdg-desktop-portal pkgs.xdg-desktop-portal-gtk]}" \
       --set VK_ICD_FILENAMES "${pkgs.vulkan-loader}/share/vulkan/icd.d/intel_icd.x86_64.json" \
       --set XDG_CURRENT_DESKTOP "KDE" \
