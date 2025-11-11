@@ -124,6 +124,13 @@ stdenv.mkDerivation {
 
   buildInputs = commonLibs ++ needlib ++ inputMethodLibs;
 
+  unpackPhase = ''
+    echo "115 unpackPhase installing...."
+    mkdir temp
+    dpkg-deb -R $src temp
+    mkdir -p $out/
+    cp -rT temp/usr $out
+  '';
   installPhase = ''
     runHook preInstall
 
