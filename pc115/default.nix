@@ -185,7 +185,7 @@ stdenv.mkDerivation {
     # 创建符号链接解决 libGL 问题
     mkdir -p $out/local/115Browser/lib
     ln -sf ${pkgs.libglvnd}/lib/libGL.so.1 $out/local/115Browser/libGL.so.1
-    ln -sf ${pkgs.mesa}/lib/libGLESv2.so.2 $out/local/115Browser/libGLESv2.so.2
+    ln -sf ${pkgs.libglvnd}/lib/libGLESv2.so.2 $out/local/115Browser/libGLESv2.so.2
 
     runHook postInstall
   '';
