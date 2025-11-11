@@ -158,9 +158,8 @@ stdenv.mkDerivation {
       --set __EGL_VENDOR_LIBRARY_DIRS "/run/opengl-driver/share/glvnd/egl_vendor.d" \
       --set FONTCONFIG_FILE "${pkgs.fontconfig.out}/etc/fonts/fonts.conf" \
       --set FONTCONFIG_PATH "${pkgs.fontconfig.out}/etc/fonts/"
-      echo 'APP_DIR="'$out'/local/115Browser"' >> $out/local/115Browser/115.sh
-    # 创建兼容性启动脚本
-    cat >> $out/local/115Browser/115.sh << "EOF"
+
+    cat > $out/local/115Browser/115.sh << "EOF"
     #!${pkgs.bash}/bin/bash
 
     # 设置输入法环境变量 - 在启动前确保 fcitx5 运行
@@ -189,7 +188,9 @@ stdenv.mkDerivation {
 
     # 库路径配置
     export LD_LIBRARY_PATH="${lib.makeLibraryPath (needlib ++ inputMethodLibs)}:$out/local/115Browser:${pkgs.libglvnd}/lib:${pkgs.mesa}/lib:/run/opengl-driver/lib:$LD_LIBRARY_PATH"
-
+    EOF
+    echo 'APP_DIR="'$out'/local/115Browser"' >> $out/local/115Browser/115.sh
+    cat >> $out/local/115Browser/115.sh << "EOF"
     # 处理启动参数
     APP_NAME=115Browser
     APP_PATH="$APP_DIR/$APP_NAME"
