@@ -164,6 +164,50 @@ stdenv.mkDerivation {
     exec "$APP_PATH" "$@"
     EOF
 
+    cat > $out/local/115Browser/115-debug.sh << "EOF"
+    #!${pkgs.bash}/bin/bash
+    # 调试版本 - 显示详细错误
+
+    export XMODIFIERS="@im=fcitx5"
+    export GTK_IM_MODULE="fcitx5" 
+    export QT_IM_MODULE="fcitx5"
+    export GTK_USE_PORTAL=0
+    export QT_QPA_PLATFORM=xcb
+    EOF
+
+    echo 'APP_DIR="'$out'/local/115Browser"' >> $out/local/115Browser/115-debug.sh
+
+    cat >> $out/local/115Browser/115-debug.sh << "EOF"
+
+    APP_PATH="$APP_DIR/115Browser"
+
+    export LD_LIBRARY_PATH="$APP_DIR:${lib.makeLibraryPath needlib}:/run/opengl-driver/lib"
+
+    echo "=== 开始调试 115Browser ==="
+    echo "APP_PATH: $APP_PATH"
+    echo "LD_LIBRARY_PATH: $LD_LIBRARY_PATH"
+    echo "当前环境变量:"
+    env | grep -E "(XDG|QT|GTK|DISPLAY|WAYLAND)"
+
+    # 检查文件是否存在
+    if [ ! -f "$APP_PATH" ]; then
+      echo "错误: 可执行文件不存在: $APP_PATH"
+      exit 1
+    fi
+
+    # 检查依赖
+    echo "=== 检查依赖 ==="
+    ldd "$APP_PATH" | grep -E "not found|=>"
+
+    # 使用 strace 跟踪
+    echo "=== 开始 strace 跟踪 ==="
+    ${pkgs.strace}/bin/strace -f -s 1000 -o /tmp/115browser-strace.log "$APP_PATH" "$@"
+
+    echo "=== 程序退出，strace 日志保存在: /tmp/115browser-strace.log ==="
+    EOF
+  
+    chmod +x $out/local/115Browser/115-debug.sh
+    ln -s $out/local/115Browser/115-debug.sh $out/bin/115-debug
     # 修复 .desktop 文件
     sed -i "s|Exec=sh /usr/local/115Browser/115.sh|Exec=$out/bin/115.sh|g" $out/share/applications/115Browser.desktop
     sed -i "s|Icon=/usr/local/115Browser/res/115Browser.png|Icon=$out/local/115Browser/res/115Browser.png|g" $out/share/applications/115Browser.desktop
