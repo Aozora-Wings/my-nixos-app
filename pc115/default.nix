@@ -186,7 +186,6 @@ stdenv.mkDerivation {
     mkdir -p $out/local/115Browser/lib
     ln -sf ${pkgs.libglvnd}/lib/libGL.so.1 $out/local/115Browser/libGL.so.1
     ln -sf ${pkgs.mesa}/lib/libGLESv2.so.2 $out/local/115Browser/libGLESv2.so.2
-    ln -sf ${pkgs.mesa}/lib/libEGL.so.1 $out/local/115Browser/libEGL.so.1
 
     runHook postInstall
   '';
