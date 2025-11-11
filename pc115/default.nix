@@ -230,7 +230,8 @@ stdenv.mkDerivation {
             ;;
     esac
     EOF
-
+    mkdir -p $out/bin
+    ln -s $out/local/115Browser/115.sh $out/bin/115.sh
     chmod +x $out/bin/115.sh
     chmod +x $out/local/115Browser/115Browser
 
