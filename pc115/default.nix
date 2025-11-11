@@ -204,7 +204,7 @@ stdenv.mkDerivation {
     EOF
 
     # 修复 .desktop 文件路径 - 指向 makeWrapper 创建的包装器
-    sed -i "s|Exec=sh /usr/local/115Browser/115.sh|Exec=$out/bin/115Browser|g" $out/share/applications/115Browser.desktop
+    sed -i "s|Exec=sh /usr/local/115Browser/115.sh|Exec=$out/bin/115.sh|g" $out/share/applications/115Browser.desktop
     sed -i "s|Icon=/usr/local/115Browser/res/115Browser.png|Icon=$out/local/115Browser/res/115Browser.png|g" $out/share/applications/115Browser.desktop
 
     # 设置可执行权限
