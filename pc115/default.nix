@@ -113,7 +113,7 @@ let
   # 正确的输入法相关库
   inputMethodLibs = with pkgs; [
     fcitx5
-    fcitx5-configtool
+    qt6Packages.fcitx5-configtool
     fcitx5-gtk
     #libsForQt5.fcitx5-qt # Qt5 版本
     # 或者如果需要 Qt6: 
