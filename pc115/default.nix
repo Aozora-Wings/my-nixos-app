@@ -99,7 +99,6 @@ let
     intel-vaapi-driver
 
     libvdpau
-    pkgs.steam-run
 
   ];
 
@@ -120,6 +119,7 @@ stdenv.mkDerivation {
     autoPatchelfHook
     makeWrapper
     pkgs.dpkg
+    pkgs.steam-run
   ];
 
   buildInputs = commonLibs ++ needlib ++ inputMethodLibs;
