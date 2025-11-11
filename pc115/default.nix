@@ -127,7 +127,12 @@ stdenv.mkDerivation {
   installPhase = ''
     runHook preInstall
 
-    # 创建使用 steam-run 的启动脚本
+    # 先确保目录存在
+    mkdir -p $out/local/115Browser
+    mkdir -p $out/bin
+    mkdir -p $out/share/applications
+
+    # 创建新的启动脚本 - 使用 steam-run
     cat > $out/local/115Browser/115.sh << "EOF"
     #!${pkgs.bash}/bin/bash
 
@@ -151,14 +156,15 @@ stdenv.mkDerivation {
     EOF
 
     # 修复 .desktop 文件
-    sed -i "s|Exec=sh /usr/local/115Browser/115.sh|Exec=$out/bin/115.sh|g" $out/share/applications/115Browser.desktop
-    sed -i "s|Icon=/usr/local/115Browser/res/115Browser.png|Icon=$out/local/115Browser/res/115Browser.png|g" $out/share/applications/115Browser.desktop
+    if [ -f "$out/share/applications/115Browser.desktop" ]; then
+      sed -i "s|Exec=sh /usr/local/115Browser/115.sh|Exec=$out/bin/115.sh|g" $out/share/applications/115Browser.desktop
+      sed -i "s|Icon=/usr/local/115Browser/res/115Browser.png|Icon=$out/local/115Browser/res/115Browser.png|g" $out/share/applications/115Browser.desktop
+    fi
 
     chmod +x $out/local/115Browser/115.sh
     chmod +x $out/local/115Browser/115Browser
 
     # 创建二进制链接
-    mkdir -p $out/bin
     ln -s $out/local/115Browser/115.sh $out/bin/115.sh
 
     runHook postInstall
