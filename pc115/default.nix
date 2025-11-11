@@ -222,7 +222,7 @@ stdenv.mkDerivation {
 
     # 修复ELF文件的依赖路径
     patchelf --set-interpreter "$(cat $NIX_CC/nix-support/dynamic-linker)" \
-              --set-rpath "${lib.makeLibraryPath (needlib ++ inputMethodLibs)}:$out/local/115Browser:/run/opengl-driver/lib" \
+              --set-rpath "${lib.makeLibraryPath (needlib ++ inputMethodLibs)}:$out/local/115Browser:${pkgs.libglvnd}/lib:${pkgs.mesa}/lib:/run/opengl-driver/lib" \
               $out/local/115Browser/115Browser
 
     # 使用 makeWrapper 确保环境变量正确传递
