@@ -101,9 +101,8 @@ let
   inputMethodLibs = with pkgs; [
     fcitx5
     fcitx5-gtk
-    fcitx5-qt
+    kdePackages.fcitx5-qt
     qt6Packages.fcitx5-configtool
-    libsForQt5.fcitx5-qt
   ];
 
 in
