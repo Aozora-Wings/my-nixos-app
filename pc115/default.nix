@@ -61,6 +61,11 @@ let
     xorg.libXrender
     xorg.libxcb
 
+    # 添加缺失的库
+    xorg.libXdamage # 缺失的 libXdamage.so.1
+    pango # 缺失的 libpango-1.0.so.0
+    cairo # 缺失的 libcairo.so.2
+
     # 多媒体和音频
     alsa-lib
     libpulseaudio
