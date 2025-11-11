@@ -206,8 +206,6 @@ stdenv.mkDerivation {
     echo "=== 程序退出，strace 日志保存在: /tmp/115browser-strace.log ==="
     EOF
   
-    chmod +x $out/local/115Browser/115-debug.sh
-    ln -s $out/local/115Browser/115-debug.sh $out/bin/115-debug
     # 修复 .desktop 文件
     sed -i "s|Exec=sh /usr/local/115Browser/115.sh|Exec=$out/bin/115.sh|g" $out/share/applications/115Browser.desktop
     sed -i "s|Icon=/usr/local/115Browser/res/115Browser.png|Icon=$out/local/115Browser/res/115Browser.png|g" $out/share/applications/115Browser.desktop
@@ -217,6 +215,8 @@ stdenv.mkDerivation {
 
     # 创建二进制链接
     mkdir -p $out/bin
+    chmod +x $out/local/115Browser/115-debug.sh
+    ln -s $out/local/115Browser/115-debug.sh $out/bin/115-debug.sh
     ln -s $out/local/115Browser/115.sh $out/bin/115.sh
 
     # 强制修复二进制文件的库依赖
