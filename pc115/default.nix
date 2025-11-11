@@ -91,15 +91,6 @@ let
     at-spi2-atk
     cups
     libxkbcommon
-    # 添加 curl 库 - 修复 libcurl.so.4.6.0 缺失
-    curl
-
-    # 添加 Intel 媒体驱动
-    intel-media-driver
-    intel-vaapi-driver
-
-    libvdpau
-
   ];
 
   # 正确的输入法相关库
@@ -119,7 +110,6 @@ stdenv.mkDerivation {
     autoPatchelfHook
     makeWrapper
     pkgs.dpkg
-    pkgs.steam-run
   ];
 
   buildInputs = commonLibs ++ needlib ++ inputMethodLibs;
@@ -131,48 +121,124 @@ stdenv.mkDerivation {
     mkdir -p $out/
     cp -rT temp/usr $out
   '';
+
   installPhase = ''
     runHook preInstall
 
-    # 先确保目录存在
-    mkdir -p $out/local/115Browser
-    mkdir -p $out/bin
-    mkdir -p $out/share/applications
-
-    # 创建新的启动脚本 - 使用 steam-run
+    # 创建新的启动脚本，保留原始环境变量
     cat > $out/local/115Browser/115.sh << "EOF"
     #!${pkgs.bash}/bin/bash
 
-    # 使用 steam-run 提供兼容环境
-    # 只设置输入法环境变量
+    # 保留所有父进程的环境变量（特别是输入法相关）
+    # 仅添加必要的浏览器特定配置
+    export XDG_CURRENT_DESKTOP=hyprland
+    export GTK_USE_PORTAL=1
+    export XDG_SESSION_TYPE=wayland
+    export QT_QPA_PLATFORM=wayland
+    export MOZ_ENABLE_WAYLAND=1
+    export NO_AT_BRIDGE=1
     export XMODIFIERS="@im=fcitx5"
     export GTK_IM_MODULE="fcitx5"
+    export INPUT_METHOD="fcitx5"
     export QT_IM_MODULE="fcitx5"
+    # Vulkan 配置
+    export VK_ICD_FILENAMES="/run/current-system/sw/share/vulkan/icd.d/intel_icd.x86_64.json"
+
+    # 库路径配置
+    export LD_LIBRARY_PATH="/run/current-system/sw/lib:$LD_LIBRARY_PATH"
     EOF
 
     echo 'APP_DIR="'$out'/local/115Browser"' >> $out/local/115Browser/115.sh
 
     cat >> $out/local/115Browser/115.sh << "EOF"
+    # 应用目录配置
     APP_NAME=115Browser
     APP_PATH="$APP_DIR/$APP_NAME"
-  
-    cd "$APP_DIR" || exit 1
-  
-    # 使用 steam-run 启动
-    exec ${pkgs.steam-run}/bin/steam-run "$APP_PATH" "$@"
-    EOF
 
-    # 修复 .desktop 文件
-    if [ -f "$out/share/applications/115Browser.desktop" ]; then
-      sed -i "s|Exec=sh /usr/local/115Browser/115.sh|Exec=$out/bin/115.sh|g" $out/share/applications/115Browser.desktop
-      sed -i "s|Icon=/usr/local/115Browser/res/115Browser.png|Icon=$out/local/115Browser/res/115Browser.png|g" $out/share/applications/115Browser.desktop
+    # 检查程序目录和文件
+    if [ ! -d "$APP_DIR" ]; then
+        echo "Error: $APP_DIR not found!"
+        exit 1
     fi
 
+    if [ ! -f "$APP_PATH" ]; then
+        echo "Error: $APP_PATH not found!"
+        exit 1
+    fi
+
+    if [ ! -x "$APP_PATH" ]; then
+        echo "Error: $APP_PATH not executable!"
+        exit 1
+    fi
+
+    cd "$APP_DIR" || exit 1
+
+    # 处理启动参数
+    start_browser() {
+        local delay=$1
+        local args=$2
+
+        if [ "$delay" -gt 0 ]; then
+            echo "Waiting for $delay seconds before start..."
+            sleep "$delay"
+        fi
+
+        if [ -n "$args" ]; then
+            "$APP_PATH" "$args" &
+        else
+            "$APP_PATH" &
+        fi
+
+        echo "Starting $APP_NAME..."
+    }
+
+    # 根据参数决定启动方式
+    case "$1" in
+        "update")
+            start_browser 2 "--update"
+            ;;
+        "")
+            start_browser 0
+            ;;
+        *)
+            start_browser 0 "$1"
+            ;;
+    esac
+
+    exit 0
+    EOF
+    ln -sf ${pkgs.libglvnd}/lib/libGL.so.1 $out/local/115Browser/libGL.so.1
+    # 修复 .desktop 文件路径 - 指向 makeWrapper 创建的包装器
+    sed -i "s|Exec=sh /usr/local/115Browser/115.sh|Exec=$out/bin/115.sh|g" $out/share/applications/115Browser.desktop
+    sed -i "s|Icon=/usr/local/115Browser/res/115Browser.png|Icon=$out/local/115Browser/res/115Browser.png|g" $out/share/applications/115Browser.desktop
+
+    # 设置可执行权限
     chmod +x $out/local/115Browser/115.sh
     chmod +x $out/local/115Browser/115Browser
 
     # 创建二进制链接
+    mkdir -p $out/bin
     ln -s $out/local/115Browser/115.sh $out/bin/115.sh
+
+    # 修复ELF文件的依赖路径
+    patchelf --set-interpreter "$(cat $NIX_CC/nix-support/dynamic-linker)" \
+              --set-rpath "${lib.makeLibraryPath (needlib ++ inputMethodLibs)}:$out/local/115Browser:${pkgs.libglvnd}/lib:${pkgs.mesa}/lib:/run/opengl-driver/lib" \
+              $out/local/115Browser/115Browser
+
+    # 使用 makeWrapper 确保环境变量正确传递
+    makeWrapper $out/local/115Browser/115Browser $out/bin/115Browser \
+      --prefix LD_LIBRARY_PATH : "${pkgs.libglvnd}/lib:${pkgs.mesa}/lib:/run/opengl-driver/lib" \
+      --prefix PATH : "${lib.makeBinPath [pkgs.xdg-desktop-portal pkgs.xdg-desktop-portal-gtk]}" \
+      --set VK_ICD_FILENAMES "${pkgs.vulkan-loader}/share/vulkan/icd.d/intel_icd.x86_64.json" \
+      --set XDG_CURRENT_DESKTOP "KDE" \
+      --set GTK_USE_PORTAL 1 \
+      --set XDG_SESSION_TYPE "x11" \
+      --set QT_QPA_PLATFORM "xcb" \
+      --set XMODIFIERS "@im=fcitx5" \
+      --set GTK_IM_MODULE "fcitx5" \
+      --set QT_IM_MODULE "fcitx5" \
+      --set LIBGL_DRIVERS_PATH "/run/opengl-driver/lib/dri" \
+      --set __EGL_VENDOR_LIBRARY_DIRS "/run/opengl-driver/share/glvnd/egl_vendor.d"
 
     runHook postInstall
   '';
