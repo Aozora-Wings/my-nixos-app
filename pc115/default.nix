@@ -144,8 +144,8 @@ stdenv.mkDerivation {
     # Vulkan 配置
     export VK_ICD_FILENAMES="/run/current-system/sw/share/vulkan/icd.d/intel_icd.x86_64.json"
 
-    # 库路径配置
-    export LD_LIBRARY_PATH="/run/current-system/sw/lib:$LD_LIBRARY_PATH"
+    # 库路径配置 - 添加输入法库路径
+    export LD_LIBRARY_PATH="/run/current-system/sw/lib:${lib.makeLibraryPath inputMethodLibs}:$LD_LIBRARY_PATH"
     EOF
 
     echo 'APP_DIR="'$out'/local/115Browser"' >> $out/local/115Browser/115.sh
@@ -225,10 +225,10 @@ stdenv.mkDerivation {
               --set-rpath "${lib.makeLibraryPath (needlib ++ inputMethodLibs)}:$out/local/115Browser:${pkgs.libglvnd}/lib:${pkgs.mesa}/lib:/run/opengl-driver/lib" \
               $out/local/115Browser/115Browser
 
-    # 使用 makeWrapper 确保环境变量正确传递
+    # 使用 makeWrapper 确保环境变量正确传递 - 统一输入法配置
     makeWrapper $out/local/115Browser/115Browser $out/bin/115Browser \
-      --prefix LD_LIBRARY_PATH : "${pkgs.libglvnd}/lib:${pkgs.mesa}/lib:/run/opengl-driver/lib" \
-      --prefix PATH : "${lib.makeBinPath [pkgs.xdg-desktop-portal pkgs.xdg-desktop-portal-gtk]}" \
+      --prefix LD_LIBRARY_PATH : "${lib.makeLibraryPath inputMethodLibs}:${pkgs.libglvnd}/lib:${pkgs.mesa}/lib:/run/opengl-driver/lib" \
+      --prefix PATH : "${lib.makeBinPath [pkgs.xdg-desktop-portal pkgs.xdg-desktop-portal-gtk pkgs.fcitx5]}" \
       --set VK_ICD_FILENAMES "${pkgs.vulkan-loader}/share/vulkan/icd.d/intel_icd.x86_64.json" \
       --set XDG_CURRENT_DESKTOP "KDE" \
       --set GTK_USE_PORTAL 1 \
@@ -237,6 +237,7 @@ stdenv.mkDerivation {
       --set XMODIFIERS "@im=fcitx5" \
       --set GTK_IM_MODULE "fcitx5" \
       --set QT_IM_MODULE "fcitx5" \
+      --set INPUT_METHOD "fcitx5" \
       --set LIBGL_DRIVERS_PATH "/run/opengl-driver/lib/dri" \
       --set __EGL_VENDOR_LIBRARY_DIRS "/run/opengl-driver/share/glvnd/egl_vendor.d"
 
