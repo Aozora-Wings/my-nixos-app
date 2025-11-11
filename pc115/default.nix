@@ -135,9 +135,17 @@ stdenv.mkDerivation {
     export QT_IM_MODULE="fcitx5"
     export INPUT_METHOD="fcitx5"
   
-    # 图形环境
+    # 图形和桌面环境
     export XDG_CURRENT_DESKTOP=KDE
     export QT_QPA_PLATFORM=xcb
+    export DISPLAY=":0"
+  
+    # 修复 portal 和 DBus 问题
+    export GTK_USE_PORTAL=0
+    export NO_AT_BRIDGE=1
+  
+    # 修复 Intel VA-API 驱动问题
+    export LIBVA_DRIVER_NAME=iHD
     EOF
 
     echo 'APP_DIR="'$out'/local/115Browser"' >> $out/local/115Browser/115.sh
@@ -146,8 +154,11 @@ stdenv.mkDerivation {
     APP_NAME=115Browser
     APP_PATH="$APP_DIR/$APP_NAME"
   
-    # 设置库路径 - 在程序启动前设置
+    # 设置库路径 - 修复所有依赖
     export LD_LIBRARY_PATH="$APP_DIR:${lib.makeLibraryPath (needlib ++ inputMethodLibs)}:/run/opengl-driver/lib:$LD_LIBRARY_PATH"
+  
+    # 设置 VA-API 驱动路径
+    export LIBVA_DRIVERS_PATH="/run/opengl-driver/lib/dri"
   
     cd "$APP_DIR" || exit 1
     exec "$APP_PATH" "$@"
@@ -182,8 +193,7 @@ stdenv.mkDerivation {
       fi
     done
 
-    # 创建符号链接解决 libGL 问题
-    mkdir -p $out/local/115Browser/lib
+    # 创建必要的符号链接
     ln -sf ${pkgs.libglvnd}/lib/libGL.so.1 $out/local/115Browser/libGL.so.1
     ln -sf ${pkgs.libglvnd}/lib/libGLESv2.so.2 $out/local/115Browser/libGLESv2.so.2
 
