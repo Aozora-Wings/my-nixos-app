@@ -1,3 +1,4 @@
+#pc115/default.nix
 { lib
 , stdenv
 , fetchurl
@@ -6,7 +7,6 @@
 , dotnet-sdk_8
 , pkgs
 , systemd
-, nixUnstable
 , commonLibs
 , makeWrapper
 , intel-compute-runtime
