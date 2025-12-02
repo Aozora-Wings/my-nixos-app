@@ -36,8 +36,9 @@
         qq-my = prev.callPackage ./qq { };
         pc115-my = prev.callPackage ./pc115 { inherit commonLibs; };
         osu-my = prev.callPackage ./osu { };
-        SteamTools-my = prev.callPackage ./SteamTools { };
-
+        SteamTools-my = prev.callPackage ./SteamTools {
+  nixUnstable = prev.nixUnstable;
+};
         android-udev-rules = prev.android-udev-rules.overrideAttrs (oldAttrs: {
           installPhase = (oldAttrs.installPhase or "") + ''
             sed -i \
