@@ -64,39 +64,32 @@ stdenv.mkDerivation {
     # 创建启动脚本
     cat > $out/bin/WattToolkit.sh <<EOF
 #!/bin/sh
+unset SSL_DIR
+echo 'exporting sh_local'
+export sh_local=/bin/sh
+echo $sh_local
+export PATH=${pkgs.nss_latest}:$PATH
+export LD_LIBRARY_PATH=${pkgs.dotnet-runtime_9}/:${dotnet-sdk_9}/sdk:${pkgs.gcc.cc.lib}/lib:${libX11}/lib:${libice}/lib:${libsm}/lib:${fontconfig}/lib:$out/bin/native/linux-x64/:$LD_LIBRARY_PATH
 export DOTNET_ROOT="${dotnet-sdk_9}"
-export PATH="${dotnet-sdk_9}/bin:\$PATH"
-export LD_LIBRARY_PATH=\
-${dotnet-runtime_9}/lib:\
-${pkgs.icu74}/lib:\
-${pkgs.openssl}/lib:\
-${pkgs.zlib}/lib:\
-${pkgs.fontconfig.lib}/lib:\
-${pkgs.nss_latest}/lib:\
-${pkgs.xorg.libX11}/lib:\
-${pkgs.xorg.libICE}/lib:\
-${pkgs.xorg.libSM}/lib:\
-\$LD_LIBRARY_PATH
-    
-dotnet "$out/assemblies/Steam++.dll"
+#getcap /run/wrappers/bin/dotnet
+dotnet "$out/bin/assemblies/Steam++.dll"
 EOF
-    
-    chmod +x $out/bin/WattToolkit.sh
-    
-    # 创建桌面文件（如果存在图标）
-    if [ -f "$out/Icons/Watt-Toolkit.png" ]; then
-      mkdir -p $out/share/applications
-      cat > $out/share/applications/WattToolkit.desktop <<EOF
+chmod +x $out/bin/WattToolkit.sh
+wrapProgram $out/bin/WattToolkit.sh \
+    --prefix PATH : ${dotnet-sdk_9}/sdk:${pkgs.dotnet-runtime_9}/bin:${pkgs.nss.tools}/bin:${pkgs.libcap}/bin
+    chmod 755 $out/bin/WattToolkit.sh
+    chmod -R 755 $out/bin/assemblies/
+    mkdir -p $out/share/applications
+    echo "create desktop file"
+    cat > $out/share/applications/WattToolkit.desktop <<EOF
 [Desktop Entry]
 Type=Application
-Name=WattToolkit
-Comment=Steam Tools
 Exec=$out/bin/WattToolkit.sh
-Icon=$out/Icons/Watt-Toolkit.png
-Categories=Utility;
+Name=WattToolkit
+Icon=$out/bin/Icons/Watt-Toolkit.png
 EOF
-    fi
-    
-    runHook postInstall
-  '';
+
+    chmod 755 $out/share/applications/WattToolkit.desktop
+runHook postInstall
+'';
 }
