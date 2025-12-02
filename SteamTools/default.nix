@@ -38,8 +38,7 @@ stdenv.mkDerivation {
   ];
   
   buildInputs = [
-    dotnet-runtime_9
-    pkgs.lttng-ust  # 添加这个！！！
+    pkgs.lttng-ust
     pkgs.icu74
     pkgs.openssl
     pkgs.zlib
@@ -50,31 +49,27 @@ stdenv.mkDerivation {
     pkgs.xorg.libSM
   ];
   
-  # 添加自动补丁的库搜索路径
-  preFixup = ''
-    autoPatchelfLibs+=(${pkgs.lttng-ust}/lib)
-  '';
+  # 设置自动补丁排除列表，避免修补 .NET 运行时的文件
+  dontAutoPatchelf = true;
   
   unpackPhase = ''
-    mkdir temp
-    tar -xzf $src -C temp
-    mv temp/* .
+    mkdir -p $out
+    tar -xzf $src -C $out
   '';
   
+  # 手动设置 run-time dependencies
   installPhase = ''
     runHook preInstall
     
-    # 复制所有文件到输出目录
-    mkdir -p $out/bin
-    cp -r . $out/bin
+    # 为应用程序文件设置 RPATH
+    find $out -type f -executable -name "*.so" -exec patchelf --add-rpath "${lib.makeLibraryPath buildInputs}" {} \;
     
     # 创建启动脚本
-    cat > $out/bin/watt-toolkit <<EOF
+    cat > $out/watt-toolkit <<EOF
 #!/bin/sh
 export DOTNET_ROOT="${dotnet-sdk_9}"
 export PATH="${dotnet-sdk_9}/bin:\$PATH"
-export LD_LIBRARY_PATH=\
-${dotnet-runtime_9}/lib:\
+export LD_LIBRARY_PATH="\
 ${pkgs.lttng-ust}/lib:\
 ${pkgs.icu74}/lib:\
 ${pkgs.openssl}/lib:\
@@ -84,12 +79,12 @@ ${pkgs.nss_latest}/lib:\
 ${pkgs.xorg.libX11}/lib:\
 ${pkgs.xorg.libICE}/lib:\
 ${pkgs.xorg.libSM}/lib:\
-\$LD_LIBRARY_PATH
+\${LD_LIBRARY_PATH:-}"
     
-exec ${dotnet-sdk_9}/bin/dotnet "$out/assemblies/Steam++.dll" "\$@"
+exec ${dotnet-sdk_9}/dotnet "$out/assemblies/Steam++.dll" "\$@"
 EOF
     
-    chmod +x $out/bin/watt-toolkit
+    chmod +x $out/watt-toolkit
     
     # 创建桌面文件（如果存在图标）
     if [ -f "$out/Icons/Watt-Toolkit.png" ]; then
@@ -99,7 +94,7 @@ EOF
 Type=Application
 Name=WattToolkit
 Comment=Steam Tools
-Exec=$out/bin/watt-toolkit
+Exec=$out/watt-toolkit
 Icon=$out/Icons/Watt-Toolkit.png
 Categories=Utility;
 EOF
