@@ -1,181 +1,102 @@
 { lib,
   stdenv,
   fetchurl,
-  fetchzip,
   autoPatchelfHook,
-  dotnet-sdk_8,
+  dotnetCorePackages,  # 添加这个参数
   pkgs,
-  systemd,
-  nixUnstable,
-  ...}: #参数列表
+  ... }:
 
 let
-  #unstable = import (builtins.fetchTarball "https://nixos.org/channels/nixos-unstable/nixexprs.tar.xz") { config = { allowUnfree = true; }; };
-  #unstable=https://nixos.org/channels/nixos-unstable
+  # 使用 .NET 9
+  dotnet-sdk_9 = dotnetCorePackages.sdk_9_0;
+  dotnet-runtime_9 = dotnetCorePackages.runtime_9_0;
+  
   pname = "WattToolkit";
   version = "3.0.0-rc.16";
-  readline = pkgs.readline;
-  #history = pkgs.hishtory;
-  ncurses = pkgs.ncurses;
-  glibc = pkgs.glibc;
-  openssl = pkgs.openssl;
-  attr = pkgs.attr;
-  gmp = pkgs.gmp;
-  lttng-ust = pkgs.lttng-ust;
-  fontconfig = pkgs.fontconfig.lib;
-  libX11 = pkgs.xorg.libX11;
-  libice = pkgs.xorg.libICE;
-  libsm = pkgs.xorg.libSM;
-  src = {
-    x86_64-linux = fetchurl {
-      url = "https://github.com/BeyondDimension/SteamTools/releases/download/3.0.0-rc.16/Steam++_v3.0.0-rc.16_linux_x64.tgz";
-      sha256 = "0chx4x01zvdlq5mn2skym4q0rllh5fmcr6cknchqqg863y13yjcr";
-    };
-  }.${stdenv.system} or (throw "${pname}-${version}: ${stdenv.system} is unsupported.");
-
+  
+  src = fetchurl {
+    url = "https://github.com/BeyondDimension/SteamTools/releases/download/${version}/Steam++_v${version}_linux_x64.tgz";
+    sha256 = "0chx4x01zvdlq5mn2skym4q0rllh5fmcr6cknchqqg863y13yjcr";
+  };
+  
   meta = {
     description = "Steam Tools";
     homepage = "https://steampp.net";
-    license = with lib.licenses; [
-      mit
-      cc-by-nc-40
-      unfreeRedistributable # osu-framework contains libbass.so in repository
-    ];
+    license = with lib.licenses; [ mit cc-by-nc-40 ];
     sourceProvenance = with lib.sourceTypes; [ binaryNativeCode ];
-    maintainers = with lib.maintainers; [ delan spacefault stepbrobd ];
     mainProgram = "WattToolkit.sh";
     platforms = [ "x86_64-linux" ];
   };
-
-  #passthru.updateScript = ./update-bin.sh;
-    runtimeDependencies = map lib.getLib [
-    pkgs.dotnetCorePackages.sdk_8_0_1xx
-    pkgs.dotnet-runtime_8
-    pkgs.readline
-    pkgs.ncurses
-    pkgs.icu74
-    pkgs.glibc
-    pkgs.openssl
-    pkgs.attr
-    pkgs.gmp
-    pkgs.gcc.cc.lib
-    pkgs.zlib
-    pkgs.fontconfig
-    pkgs.lttng-ust_2_12
-    pkgs.nss_latest
-    pkgs.zenity
-    pkgs.xorg.libX11
-    pkgs.xorg.libICE
-    pkgs.xorg.libSM
-  ];
+  
 in
 stdenv.mkDerivation {
-  #passthru
-  inherit pname version src meta ;
-    nativeBuildInputs = [
-      autoPatchelfHook
-      dotnet-sdk_8
-      pkgs.makeWrapper
-      pkgs.nss_latest
-      pkgs.nss.tools
-      pkgs.libcap
-    # makeBinaryWrapper not support shell wrapper specifically for `NIXOS_OZONE_WL`.
+  inherit pname version src meta;
+  
+  nativeBuildInputs = [
+    autoPatchelfHook
+    dotnet-sdk_9        # 改为 .NET 9
+    pkgs.makeWrapper
   ];
-  #构建时所需要的依赖
-    buildInputs = [
-    pkgs.dotnetCorePackages.sdk_8_0_1xx
-    pkgs.dotnet-runtime_8
-    pkgs.readline
-    pkgs.ncurses
+  
+  buildInputs = [
+    dotnet-runtime_9    # 改为 .NET 9
     pkgs.icu74
-    pkgs.glibc
     pkgs.openssl
-    pkgs.attr
-    pkgs.gmp
-    pkgs.gcc.cc.lib
     pkgs.zlib
-    pkgs.fontconfig
-    pkgs.lttng-ust_2_12
-    pkgs.zenity
+    pkgs.fontconfig.lib
+    pkgs.nss_latest
     pkgs.xorg.libX11
     pkgs.xorg.libICE
     pkgs.xorg.libSM
-    pkgs.nss_latest
   ];
- #运行时所需要的依赖
-runtimeDependencies =
-map lib.getLib [
-  pkgs.dotnet-runtime_8
-  pkgs.readline
-  pkgs.ncurses
-  pkgs.icu74
-  pkgs.glibc
-  pkgs.openssl
-  pkgs.attr
-  pkgs.gmp
-  pkgs.gcc.cc.lib
-  pkgs.zlib
-  pkgs.fontconfig
-  pkgs.lttng-ust_2_12
-  pkgs.nss_latest
-  pkgs.zenity
-  pkgs.xorg.libX11
-  pkgs.xorg.libICE
-  pkgs.xorg.libSM
-];
-  #解压缩
-    unpackPhase = ''
-    echo "Watt Toolkit unpackPhase installings...."
-    mkdir temp
-    tar -xzf $src -C temp
-    mv temp/* .
-  '';
-
-#     preFixup = ''
-    
-#   autoPatchelfLibs+=(${lttng-ust}/lib)
-#   echo "autoPatchelfLibs: $autoPatchelfLibs"
-# '';
+  
   dontPatchELF = true;
   dontStrip = true;
-    installPhase = ''
+  
+  unpackPhase = ''
+    mkdir -p $out
+    tar -xzf $src -C $out
+  '';
+  
+  installPhase = ''
     runHook preInstall
-    echo "Watt Toolkit installPhase installings...."
-    mkdir -p $out/bin
-    cp -r . $out/bin
-    # cp -r ./assemblies $out/bin
-    # cp -r ./modules $out/bin
-    # cp -r ./Icons $out/bin
-    # cp -r ./native $out/bin
-        # 创建 WattToolkit.sh 脚本
+    
+    # 创建启动脚本
     cat > $out/bin/WattToolkit.sh <<EOF
 #!/bin/sh
-unset SSL_DIR
-echo 'exporting sh_local'
-export sh_local=/bin/sh
-echo $sh_local
-export PATH=${pkgs.nss_latest}:$PATH
-export LD_LIBRARY_PATH=${pkgs.dotnet-runtime_8}/:${pkgs.dotnetCorePackages.sdk_8_0_1xx}/sdk:${pkgs.gcc.cc.lib}/lib:${libX11}/lib:${libice}/lib:${libsm}/lib:${fontconfig}/lib:$out/bin/native/linux-x64/:$LD_LIBRARY_PATH
-export DOTNET_ROOT="${pkgs.dotnetCorePackages.sdk_8_0_1xx}"
-#getcap /run/wrappers/bin/dotnet
-dotnet "$out/bin/assemblies/Steam++.dll"
+export DOTNET_ROOT="${dotnet-sdk_9}"
+export PATH="${dotnet-sdk_9}/bin:\$PATH"
+export LD_LIBRARY_PATH=\
+${dotnet-runtime_9}/lib:\
+${pkgs.icu74}/lib:\
+${pkgs.openssl}/lib:\
+${pkgs.zlib}/lib:\
+${pkgs.fontconfig.lib}/lib:\
+${pkgs.nss_latest}/lib:\
+${pkgs.xorg.libX11}/lib:\
+${pkgs.xorg.libICE}/lib:\
+${pkgs.xorg.libSM}/lib:\
+\$LD_LIBRARY_PATH
+    
+dotnet "$out/assemblies/Steam++.dll"
 EOF
-chmod +x $out/bin/WattToolkit.sh
-wrapProgram $out/bin/WattToolkit.sh \
-    --prefix PATH : ${pkgs.dotnetCorePackages.sdk_8_0_1xx}/sdk:${pkgs.dotnet-runtime_8}/bin:${pkgs.nss.tools}/bin:${pkgs.libcap}/bin
-    chmod 755 $out/bin/WattToolkit.sh
-    chmod -R 755 $out/bin/assemblies/
-    mkdir -p $out/share/applications
-    echo "create desktop file"
-    cat > $out/share/applications/WattToolkit.desktop <<EOF
+    
+    chmod +x $out/bin/WattToolkit.sh
+    
+    # 创建桌面文件（如果存在图标）
+    if [ -f "$out/Icons/Watt-Toolkit.png" ]; then
+      mkdir -p $out/share/applications
+      cat > $out/share/applications/WattToolkit.desktop <<EOF
 [Desktop Entry]
 Type=Application
-Exec=$out/bin/WattToolkit.sh
 Name=WattToolkit
-Icon=$out/bin/Icons/Watt-Toolkit.png
+Comment=Steam Tools
+Exec=$out/bin/WattToolkit.sh
+Icon=$out/Icons/Watt-Toolkit.png
+Categories=Utility;
 EOF
-
-    chmod 755 $out/share/applications/WattToolkit.desktop
-runHook postInstall
-'';
+    fi
+    
+    runHook postInstall
+  '';
 }
