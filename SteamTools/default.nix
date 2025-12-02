@@ -13,7 +13,7 @@ let
   #unstable = import (builtins.fetchTarball "https://nixos.org/channels/nixos-unstable/nixexprs.tar.xz") { config = { allowUnfree = true; }; };
   #unstable=https://nixos.org/channels/nixos-unstable
   pname = "WattToolkit";
-  version = "3.0.0-rc.8";
+  version = "3.0.0-rc.16";
   readline = pkgs.readline;
   #history = pkgs.hishtory;
   ncurses = pkgs.ncurses;
