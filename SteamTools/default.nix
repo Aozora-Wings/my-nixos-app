@@ -69,9 +69,32 @@ stdenv.mkDerivation {
     mkdir -p $out/bin
     cp -r . $out/bin
     
-    # 为应用程序文件设置 RPATH
-    # 直接使用 lib.makeLibraryPath 和 myBuildInputs
-    find $out/bin -type f -executable -name "*.so" -exec patchelf --add-rpath "${lib.makeLibraryPath myBuildInputs}" {} \;
+    # 为应用程序的所有可执行文件和共享库设置 RPATH
+    # 包括 ELF 可执行文件、共享库和 .NET 自包含应用程序
+    echo "修补 ELF 文件..."
+    
+    # 1. 修补所有 .so 文件
+    find $out/bin -type f -name "*.so" -exec patchelf --add-rpath "${lib.makeLibraryPath myBuildInputs}" {} \; 2>/dev/null || true
+    
+    # 2. 修补所有 ELF 可执行文件（包括 Steam++.Accelerator）
+    find $out/bin -type f -executable -exec sh -c 'file "$1" | grep -q "ELF"' _ {} \; \
+      -exec patchelf --add-rpath "${lib.makeLibraryPath myBuildInputs}" {} \; 2>/dev/null || true
+    
+    # 3. 特别修补 modules/Accelerator/Steam++.Accelerator
+    if [ -f "$out/bin/modules/Accelerator/Steam++.Accelerator" ]; then
+      echo "修补加速器模块..."
+      patchelf --add-rpath "${lib.makeLibraryPath myBuildInputs}" "$out/bin/modules/Accelerator/Steam++.Accelerator" 2>/dev/null || true
+      # 设置解释器
+      patchelf --set-interpreter "$(cat $NIX_CC/nix-support/dynamic-linker)" "$out/bin/modules/Accelerator/Steam++.Accelerator" 2>/dev/null || true
+    fi
+    
+    # 4. 检查是否是 .NET 自包含应用程序，并设置解释器
+    find $out/bin -type f -executable -exec sh -c '
+      file "$1" | grep -q "ELF" && {
+        # 如果是 ELF 文件，设置正确的解释器
+        patchelf --set-interpreter "$(cat $NIX_CC/nix-support/dynamic-linker)" "$1" 2>/dev/null || true
+      }
+    ' _ {} \;
     
     # 创建启动脚本 - 使用 @ 作为占位符，避免 Nix 解析
     cat > $out/bin/watt-toolkit <<'EOF'
