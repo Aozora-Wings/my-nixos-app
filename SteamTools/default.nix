@@ -28,8 +28,8 @@ let
   libsm = pkgs.xorg.libSM;
   src = {
     x86_64-linux = fetchurl {
-      url = "https://alist.qkzy.net/d/115/APP/%5BRelease%5D%20Steam%2B%2B_v3.0.0-rc.8_linux_x64_240624_1617075690292.tgz?sign=ZKa8VKUqh0ypQJ-AxZN-qq01QUYlifNrvEOYPTIKCZY=:0";
-      sha256 = "sha256-+tdwvMfnWbYhqG1/JeZyGkR/xIb7t8CgsystejqwNWA=";
+      url = "https://github.com/BeyondDimension/SteamTools/releases/download/3.0.0-rc.16/Steam++_v3.0.0-rc.16_linux_x64.tgz";
+      sha256 = "0chx4x01zvdlq5mn2skym4q0rllh5fmcr6cknchqqg863y13yjcr";
     };
   }.${stdenv.system} or (throw "${pname}-${version}: ${stdenv.system} is unsupported.");
 
