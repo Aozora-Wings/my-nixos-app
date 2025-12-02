@@ -50,16 +50,26 @@ stdenv.mkDerivation {
     pkgs.xorg.libSM
   ];
   
+  #解压缩
+    unpackPhase = ''
+    echo "Watt Toolkit unpackPhase installings...."
+    mkdir temp
+    tar -xzf $src -C temp
+    mv temp/* .
+  '';
+
+#     preFixup = ''
+    
+#   autoPatchelfLibs+=(${lttng-ust}/lib)
+#   echo "autoPatchelfLibs: $autoPatchelfLibs"
+# '';
   dontPatchELF = true;
   dontStrip = true;
-  
-  unpackPhase = ''
-    mkdir -p $out
-    tar -xzf $src -C $out
-  '';
-  
-  installPhase = ''
+    installPhase = ''
     runHook preInstall
+    echo "Watt Toolkit installPhase installings...."
+    mkdir -p $out/bin
+    cp -r . $out/bin
     
     # 创建启动脚本
     cat > $out/bin/WattToolkit.sh <<EOF
