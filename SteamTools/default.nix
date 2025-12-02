@@ -73,39 +73,39 @@ stdenv.mkDerivation {
     # 直接使用 lib.makeLibraryPath 和 myBuildInputs
     find $out/bin -type f -executable -name "*.so" -exec patchelf --add-rpath "${lib.makeLibraryPath myBuildInputs}" {} \;
     
-    # 创建启动脚本
+    # 创建启动脚本 - 使用 @ 作为占位符，避免 Nix 解析
     cat > $out/bin/watt-toolkit <<'EOF'
 #!/bin/sh
-export DOTNET_ROOT="${DOTNET_ROOT}"
-export PATH="${DOTNET_ROOT}/bin:$PATH"
+export DOTNET_ROOT="@DOTNET_ROOT@"
+export PATH="@DOTNET_ROOT@/bin:$PATH"
 export LD_LIBRARY_PATH="\
-${LIB_LTTNG_UST}/lib:\
-${LIB_ICU74}/lib:\
-${LIB_OPENSSL}/lib:\
-${LIB_ZLIB}/lib:\
-${LIB_FONTCONFIG}/lib:\
-${LIB_NSS}/lib:\
-${LIB_X11}/lib:\
-${LIB_ICE}/lib:\
-${LIB_SM}/lib:\
+@LIB_LTTNG_UST@/lib:\
+@LIB_ICU74@/lib:\
+@LIB_OPENSSL@/lib:\
+@LIB_ZLIB@/lib:\
+@LIB_FONTCONFIG@/lib:\
+@LIB_NSS@/lib:\
+@LIB_X11@/lib:\
+@LIB_ICE@/lib:\
+@LIB_SM@/lib:\
 ''${LD_LIBRARY_PATH:-}"
     
-exec "$DOTNET_ROOT/bin/dotnet" "$APP_DIR/assemblies/Steam++.dll" "$@"
+exec "@DOTNET_ROOT@/bin/dotnet" "@APP_DIR@/assemblies/Steam++.dll" "$@"
 EOF
     
     # 替换启动脚本中的占位符变量
     substituteInPlace $out/bin/watt-toolkit \
-      --replace '${DOTNET_ROOT}' "${dotnet-sdk_9}" \
-      --replace '${APP_DIR}' "$out/bin" \
-      --replace '${LIB_LTTNG_UST}' "${pkgs.lttng-ust}" \
-      --replace '${LIB_ICU74}' "${pkgs.icu74}" \
-      --replace '${LIB_OPENSSL}' "${pkgs.openssl}" \
-      --replace '${LIB_ZLIB}' "${pkgs.zlib}" \
-      --replace '${LIB_FONTCONFIG}' "${pkgs.fontconfig.lib}" \
-      --replace '${LIB_NSS}' "${pkgs.nss_latest}" \
-      --replace '${LIB_X11}' "${pkgs.xorg.libX11}" \
-      --replace '${LIB_ICE}' "${pkgs.xorg.libICE}" \
-      --replace '${LIB_SM}' "${pkgs.xorg.libSM}"
+      --subst-var-by DOTNET_ROOT "${dotnet-sdk_9}" \
+      --subst-var-by APP_DIR "$out/bin" \
+      --subst-var-by LIB_LTTNG_UST "${pkgs.lttng-ust}" \
+      --subst-var-by LIB_ICU74 "${pkgs.icu74}" \
+      --subst-var-by LIB_OPENSSL "${pkgs.openssl}" \
+      --subst-var-by LIB_ZLIB "${pkgs.zlib}" \
+      --subst-var-by LIB_FONTCONFIG "${pkgs.fontconfig.lib}" \
+      --subst-var-by LIB_NSS "${pkgs.nss_latest}" \
+      --subst-var-by LIB_X11 "${pkgs.xorg.libX11}" \
+      --subst-var-by LIB_ICE "${pkgs.xorg.libICE}" \
+      --subst-var-by LIB_SM "${pkgs.xorg.libSM}"
     
     chmod +x $out/bin/watt-toolkit
     
