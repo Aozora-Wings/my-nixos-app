@@ -103,9 +103,10 @@ Exec=$out/bin/WattToolkit.sh
 Icon=$out/Icons/Watt-Toolkit.png
 Categories=Utility;
 EOF
+chmod 755 $out/share/applications/WattToolkit.desktop
     fi
 
-    chmod 755 $out/share/applications/WattToolkit.desktop
+    
 runHook postInstall
 '';
 }
