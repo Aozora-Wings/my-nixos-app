@@ -18,6 +18,19 @@ let
     sha256 = "0chx4x01zvdlq5mn2skym4q0rllh5fmcr6cknchqqg863y13yjcr";
   };
   
+  # 将 buildInputs 定义在 let 块中，使其在整个作用域中可用
+  myBuildInputs = [
+    pkgs.lttng-ust
+    pkgs.icu74
+    pkgs.openssl
+    pkgs.zlib
+    pkgs.fontconfig.lib
+    pkgs.nss_latest
+    pkgs.xorg.libX11
+    pkgs.xorg.libICE
+    pkgs.xorg.libSM
+  ];
+  
   meta = {
     description = "Steam Tools";
     homepage = "https://steampp.net";
@@ -37,27 +50,18 @@ stdenv.mkDerivation {
     pkgs.makeWrapper
   ];
   
-  buildInputs = [
-    pkgs.lttng-ust
-    pkgs.icu74
-    pkgs.openssl
-    pkgs.zlib
-    pkgs.fontconfig.lib
-    pkgs.nss_latest
-    pkgs.xorg.libX11
-    pkgs.xorg.libICE
-    pkgs.xorg.libSM
-  ];
+  # 使用 let 块中定义的 myBuildInputs
+  buildInputs = myBuildInputs;
   
   # 设置自动补丁排除列表，避免修补 .NET 运行时的文件
   dontAutoPatchelf = true;
   
   unpackPhase = ''
-    mkdir -p $out
-    tar -xzf $src -C $out
+    mkdir temp
+    tar -xzf $src -C temp
+    mv temp/* .
   '';
   
-  # 手动设置 run-time dependencies
   installPhase = ''
     runHook preInstall
     
@@ -66,32 +70,42 @@ stdenv.mkDerivation {
     cp -r . $out/bin
     
     # 为应用程序文件设置 RPATH
-    find $out/bin -type f -executable -name "*.so" -exec patchelf --add-rpath "${lib.makeLibraryPath buildInputs}" {} \;
+    # 直接使用 lib.makeLibraryPath 和 myBuildInputs
+    find $out/bin -type f -executable -name "*.so" -exec patchelf --add-rpath "${lib.makeLibraryPath myBuildInputs}" {} \;
     
-    # 创建启动脚本 - 使用更简单的方法
+    # 创建启动脚本
     cat > $out/bin/watt-toolkit <<'EOF'
 #!/bin/sh
-export DOTNET_ROOT="${dotnet-sdk_9}"
-export PATH="${dotnet-sdk_9}/bin:$PATH"
+export DOTNET_ROOT="${DOTNET_ROOT}"
+export PATH="${DOTNET_ROOT}/bin:$PATH"
 export LD_LIBRARY_PATH="\
-${pkgs.lttng-ust}/lib:\
-${pkgs.icu74}/lib:\
-${pkgs.openssl}/lib:\
-${pkgs.zlib}/lib:\
-${pkgs.fontconfig.lib}/lib:\
-${pkgs.nss_latest}/lib:\
-${pkgs.xorg.libX11}/lib:\
-${pkgs.xorg.libICE}/lib:\
-${pkgs.xorg.libSM}/lib:\
+${LIB_LTTNG_UST}/lib:\
+${LIB_ICU74}/lib:\
+${LIB_OPENSSL}/lib:\
+${LIB_ZLIB}/lib:\
+${LIB_FONTCONFIG}/lib:\
+${LIB_NSS}/lib:\
+${LIB_X11}/lib:\
+${LIB_ICE}/lib:\
+${LIB_SM}/lib:\
 ''${LD_LIBRARY_PATH:-}"
     
-exec "${dotnet-sdk_9}/bin/dotnet" "$out/bin/assemblies/Steam++.dll" "$@"
+exec "$DOTNET_ROOT/bin/dotnet" "$APP_DIR/assemblies/Steam++.dll" "$@"
 EOF
     
-    # 替换启动脚本中的变量
+    # 替换启动脚本中的占位符变量
     substituteInPlace $out/bin/watt-toolkit \
-      --replace '${dotnet-sdk_9}' "${dotnet-sdk_9}" \
-      --replace '$out' "$out"
+      --replace '${DOTNET_ROOT}' "${dotnet-sdk_9}" \
+      --replace '${APP_DIR}' "$out/bin" \
+      --replace '${LIB_LTTNG_UST}' "${pkgs.lttng-ust}" \
+      --replace '${LIB_ICU74}' "${pkgs.icu74}" \
+      --replace '${LIB_OPENSSL}' "${pkgs.openssl}" \
+      --replace '${LIB_ZLIB}' "${pkgs.zlib}" \
+      --replace '${LIB_FONTCONFIG}' "${pkgs.fontconfig.lib}" \
+      --replace '${LIB_NSS}' "${pkgs.nss_latest}" \
+      --replace '${LIB_X11}' "${pkgs.xorg.libX11}" \
+      --replace '${LIB_ICE}' "${pkgs.xorg.libICE}" \
+      --replace '${LIB_SM}' "${pkgs.xorg.libSM}"
     
     chmod +x $out/bin/watt-toolkit
     
