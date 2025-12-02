@@ -61,14 +61,18 @@ stdenv.mkDerivation {
   installPhase = ''
     runHook preInstall
     
-    # 为应用程序文件设置 RPATH
-    find $out -type f -executable -name "*.so" -exec patchelf --add-rpath "${lib.makeLibraryPath buildInputs}" {} \;
+    # 复制所有文件到输出目录
+    mkdir -p $out/bin
+    cp -r . $out/bin
     
-    # 创建启动脚本
-    cat > $out/watt-toolkit <<EOF
+    # 为应用程序文件设置 RPATH
+    find $out/bin -type f -executable -name "*.so" -exec patchelf --add-rpath "${lib.makeLibraryPath buildInputs}" {} \;
+    
+    # 创建启动脚本 - 使用更简单的方法
+    cat > $out/bin/watt-toolkit <<'EOF'
 #!/bin/sh
 export DOTNET_ROOT="${dotnet-sdk_9}"
-export PATH="${dotnet-sdk_9}/bin:\$PATH"
+export PATH="${dotnet-sdk_9}/bin:$PATH"
 export LD_LIBRARY_PATH="\
 ${pkgs.lttng-ust}/lib:\
 ${pkgs.icu74}/lib:\
@@ -79,23 +83,28 @@ ${pkgs.nss_latest}/lib:\
 ${pkgs.xorg.libX11}/lib:\
 ${pkgs.xorg.libICE}/lib:\
 ${pkgs.xorg.libSM}/lib:\
-\${LD_LIBRARY_PATH:-}"
+''${LD_LIBRARY_PATH:-}"
     
-exec ${dotnet-sdk_9}/dotnet "$out/assemblies/Steam++.dll" "\$@"
+exec "${dotnet-sdk_9}/bin/dotnet" "$out/bin/assemblies/Steam++.dll" "$@"
 EOF
     
-    chmod +x $out/watt-toolkit
+    # 替换启动脚本中的变量
+    substituteInPlace $out/bin/watt-toolkit \
+      --replace '${dotnet-sdk_9}' "${dotnet-sdk_9}" \
+      --replace '$out' "$out"
+    
+    chmod +x $out/bin/watt-toolkit
     
     # 创建桌面文件（如果存在图标）
-    if [ -f "$out/Icons/Watt-Toolkit.png" ]; then
+    if [ -f "$out/bin/Icons/Watt-Toolkit.png" ]; then
       mkdir -p $out/share/applications
       cat > $out/share/applications/watt-toolkit.desktop <<EOF
 [Desktop Entry]
 Type=Application
 Name=WattToolkit
 Comment=Steam Tools
-Exec=$out/watt-toolkit
-Icon=$out/Icons/Watt-Toolkit.png
+Exec=$out/bin/watt-toolkit
+Icon=$out/bin/Icons/Watt-Toolkit.png
 Categories=Utility;
 EOF
       chmod 644 $out/share/applications/watt-toolkit.desktop
