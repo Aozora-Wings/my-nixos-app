@@ -2,12 +2,11 @@
   stdenv,
   fetchurl,
   autoPatchelfHook,
-  dotnetCorePackages,  # 添加这个参数
+  dotnetCorePackages,
   pkgs,
   ... }:
 
 let
-  # 使用 .NET 9
   dotnet-sdk_9 = dotnetCorePackages.sdk_9_0;
   dotnet-runtime_9 = dotnetCorePackages.runtime_9_0;
   
@@ -24,7 +23,7 @@ let
     homepage = "https://steampp.net";
     license = with lib.licenses; [ mit cc-by-nc-40 ];
     sourceProvenance = with lib.sourceTypes; [ binaryNativeCode ];
-    mainProgram = "WattToolkit.sh";
+    mainProgram = "watt-toolkit";
     platforms = [ "x86_64-linux" ];
   };
   
@@ -34,12 +33,13 @@ stdenv.mkDerivation {
   
   nativeBuildInputs = [
     autoPatchelfHook
-    dotnet-sdk_9        # 改为 .NET 9
+    dotnet-sdk_9
     pkgs.makeWrapper
   ];
   
   buildInputs = [
-    dotnet-runtime_9    # 改为 .NET 9
+    dotnet-runtime_9
+    pkgs.lttng-ust  # 添加这个！！！
     pkgs.icu74
     pkgs.openssl
     pkgs.zlib
@@ -50,34 +50,32 @@ stdenv.mkDerivation {
     pkgs.xorg.libSM
   ];
   
-  #解压缩
-    unpackPhase = ''
-    echo "Watt Toolkit unpackPhase installings...."
+  # 添加自动补丁的库搜索路径
+  preFixup = ''
+    autoPatchelfLibs+=(${pkgs.lttng-ust}/lib)
+  '';
+  
+  unpackPhase = ''
     mkdir temp
     tar -xzf $src -C temp
     mv temp/* .
   '';
-
-#     preFixup = ''
-    
-#   autoPatchelfLibs+=(${lttng-ust}/lib)
-#   echo "autoPatchelfLibs: $autoPatchelfLibs"
-# '';
-  dontPatchELF = true;
-  dontStrip = true;
-    installPhase = ''
+  
+  installPhase = ''
     runHook preInstall
-    echo "Watt Toolkit installPhase installings...."
-    mkdir -p $out/bin
-    cp -r . $out/bin
-
+    
+    # 复制所有文件到输出目录
+    mkdir -p $out
+    cp -r . $out
+    
     # 创建启动脚本
-    cat > $out/bin/WattToolkit.sh <<EOF
+    cat > $out/bin/watt-toolkit <<EOF
 #!/bin/sh
 export DOTNET_ROOT="${dotnet-sdk_9}"
 export PATH="${dotnet-sdk_9}/bin:\$PATH"
 export LD_LIBRARY_PATH=\
 ${dotnet-runtime_9}/lib:\
+${pkgs.lttng-ust}/lib:\
 ${pkgs.icu74}/lib:\
 ${pkgs.openssl}/lib:\
 ${pkgs.zlib}/lib:\
@@ -88,25 +86,26 @@ ${pkgs.xorg.libICE}/lib:\
 ${pkgs.xorg.libSM}/lib:\
 \$LD_LIBRARY_PATH
     
-dotnet "$out/assemblies/Steam++.dll"
+exec ${dotnet-sdk_9}/bin/dotnet "$out/assemblies/Steam++.dll" "\$@"
 EOF
-chmod +x $out/bin/WattToolkit.sh
+    
+    chmod +x $out/bin/watt-toolkit
+    
     # 创建桌面文件（如果存在图标）
     if [ -f "$out/Icons/Watt-Toolkit.png" ]; then
       mkdir -p $out/share/applications
-      cat > $out/share/applications/WattToolkit.desktop <<EOF
+      cat > $out/share/applications/watt-toolkit.desktop <<EOF
 [Desktop Entry]
 Type=Application
 Name=WattToolkit
 Comment=Steam Tools
-Exec=$out/bin/WattToolkit.sh
+Exec=$out/bin/watt-toolkit
 Icon=$out/Icons/Watt-Toolkit.png
 Categories=Utility;
 EOF
-chmod 755 $out/share/applications/WattToolkit.desktop
+      chmod 644 $out/share/applications/watt-toolkit.desktop
     fi
-
     
-runHook postInstall
-'';
+    runHook postInstall
+  '';
 }
