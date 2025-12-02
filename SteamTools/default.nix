@@ -65,8 +65,8 @@ stdenv.mkDerivation {
     runHook preInstall
     
     # 复制所有文件到输出目录
-    mkdir -p $out
-    cp -r . $out
+    mkdir -p $out/bin
+    cp -r . $out/bin
     
     # 创建启动脚本
     cat > $out/bin/watt-toolkit <<EOF
