@@ -52,17 +52,17 @@ let
     vulkan-validation-layers
 
     # X11 相关
-    xorg.libX11
-    xorg.libXext
-    xorg.libXrandr
-    xorg.libXcomposite
-    xorg.libXcursor
-    xorg.libXi
-    xorg.libXrender
-    xorg.libxcb
+    libX11
+    libXext
+    libXrandr
+    libXcomposite
+    libXcursor
+    libXi
+    libXrender
+    libxcb
 
     # 添加缺失的库
-    xorg.libXdamage # 缺失的 libXdamage.so.1
+    libXdamage # 缺失的 libXdamage.so.1
     pango # 缺失的 libpango-1.0.so.0
     cairo # 缺失的 libcairo.so.2
 
