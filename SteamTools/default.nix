@@ -7,15 +7,15 @@
   ... }:
 
 let
-  dotnet-sdk_9 = dotnetCorePackages.sdk_9_0;
-  dotnet-runtime_9 = dotnetCorePackages.runtime_9_0;
+  dotnet-sdk_10 = dotnetCorePackages.sdk_10_0;
+  dotnet-runtime_10 = dotnetCorePackages.runtime_10_0;
   
   pname = "WattToolkit";
-  version = "3.0.0-rc.16";
+  version = "3.1.0";
   
   src = fetchurl {
     url = "https://github.com/BeyondDimension/SteamTools/releases/download/${version}/Steam++_v${version}_linux_x64.tgz";
-    sha256 = "0chx4x01zvdlq5mn2skym4q0rllh5fmcr6cknchqqg863y13yjcr";
+    sha256 = "FB99BCD4FA6AC649228700F908819FE19A16CC29A866AD43D2873E504A41783F";
   };
   
   # 将 buildInputs 定义在 let 块中，使其在整个作用域中可用
@@ -26,15 +26,15 @@ let
     pkgs.zlib
     pkgs.fontconfig.lib
     pkgs.nss_latest
-    pkgs.xorg.libX11
-    pkgs.xorg.libICE
-    pkgs.xorg.libSM
+    pkgs.libX11
+    pkgs.libICE
+    pkgs.libSM
   ];
   
   meta = {
     description = "Steam Tools";
     homepage = "https://steampp.net";
-    license = with lib.licenses; [ mit cc-by-nc-40 ];
+    license = lib.licenses.gpl3Only;
     sourceProvenance = with lib.sourceTypes; [ binaryNativeCode ];
     mainProgram = "watt-toolkit";
     platforms = [ "x86_64-linux" ];
@@ -46,8 +46,9 @@ stdenv.mkDerivation {
   
   nativeBuildInputs = [
     autoPatchelfHook
-    dotnet-sdk_9
+    dotnet-sdk_10
     pkgs.makeWrapper
+    pkgs.steam-run  # 添加 steam-run 作为构建依赖
   ];
   
   # 使用 let 块中定义的 myBuildInputs
@@ -96,8 +97,8 @@ stdenv.mkDerivation {
       }
     ' _ {} \;
     
-    # 创建启动脚本 - 使用 @ 作为占位符，避免 Nix 解析
-    cat > $out/bin/watt-toolkit <<'EOF'
+    # 创建基础启动脚本（不使用 steam-run）
+    cat > $out/bin/watt-toolkit-base <<'EOF'
 #!/bin/sh
 export DOTNET_ROOT="@DOTNET_ROOT@"
 export PATH="@DOTNET_ROOT@/bin:$PATH"
@@ -116,9 +117,9 @@ export LD_LIBRARY_PATH="\
 exec "@DOTNET_ROOT@/bin/dotnet" "@APP_DIR@/assemblies/Steam++.dll" "$@"
 EOF
     
-    # 替换启动脚本中的占位符变量
-    substituteInPlace $out/bin/watt-toolkit \
-      --subst-var-by DOTNET_ROOT "${dotnet-sdk_9}" \
+    # 替换基础脚本中的占位符变量
+    substituteInPlace $out/bin/watt-toolkit-base \
+      --subst-var-by DOTNET_ROOT "${dotnet-sdk_10}" \
       --subst-var-by APP_DIR "$out/bin" \
       --subst-var-by LIB_LTTNG_UST "${pkgs.lttng-ust}" \
       --subst-var-by LIB_ICU74 "${pkgs.icu74}" \
@@ -126,11 +127,21 @@ EOF
       --subst-var-by LIB_ZLIB "${pkgs.zlib}" \
       --subst-var-by LIB_FONTCONFIG "${pkgs.fontconfig.lib}" \
       --subst-var-by LIB_NSS "${pkgs.nss_latest}" \
-      --subst-var-by LIB_X11 "${pkgs.xorg.libX11}" \
-      --subst-var-by LIB_ICE "${pkgs.xorg.libICE}" \
-      --subst-var-by LIB_SM "${pkgs.xorg.libSM}"
+      --subst-var-by LIB_X11 "${pkgs.libX11}" \
+      --subst-var-by LIB_ICE "${pkgs.libICE}" \
+      --subst-var-by LIB_SM "${pkgs.libSM}"
     
-    chmod +x $out/bin/watt-toolkit
+    chmod +x $out/bin/watt-toolkit-base
+    
+    # 创建 steam-run 包装的主脚本
+    # 这个脚本会调用基础脚本，但通过 steam-run 运行
+    makeWrapper ${pkgs.steam-run}/bin/steam-run $out/bin/watt-toolkit \
+      --add-flags "$out/bin/watt-toolkit-base" \
+      --set LD_LIBRARY_PATH "${lib.makeLibraryPath myBuildInputs}:$LD_LIBRARY_PATH" \
+      --set DOTNET_ROOT "${dotnet-sdk_10}/share/dotnet"
+    
+    # 可选：创建直接运行的版本（用于对比测试）
+    ln -s $out/bin/watt-toolkit-base $out/bin/watt-toolkit-direct
     
     # 创建桌面文件（如果存在图标）
     if [ -f "$out/bin/Icons/Watt-Toolkit.png" ]; then
