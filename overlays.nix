@@ -31,6 +31,7 @@
           inherit (prev.python3Packages) wrapPython;
           # 不需要手动传 Qt/KDE 依赖，kdePackages 会自动处理
         };
+        kdiskmark-fix = prev.callPackage ./kdiskmark {  };
         verysync-my = prev.callPackage ./verysync { inherit commonLibs; };
         Ipanel-my = prev.callPackage ./1panel { inherit commonLibs; };
         qq-my = prev.callPackage ./qq { };
