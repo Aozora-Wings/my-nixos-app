@@ -15,7 +15,7 @@ let
   
   src = fetchurl {
     url = "https://publicinaccess.blob.core.windows.net/file/steam++.tgz";
-    sha256 = "sha256-TDze5m1gexcIdRdy+nD89Ecx4E04Sm2TP9UTfJjNGIA=";
+    sha256 = "sha256-EiCyoQ1NX8UjCus9V1swZjzv/CBpkA3Opo3pvLlIskc=";
   };
   
   # 将 buildInputs 定义在 let 块中，使其在整个作用域中可用
