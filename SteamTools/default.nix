@@ -14,8 +14,8 @@ let
   version = "3.1.0";
   
   src = fetchurl {
-    url = "https://github.com/BeyondDimension/SteamTools/releases/download/${version}/Steam++_v${version}_linux_x64.tgz";
-    sha256 = "FB99BCD4FA6AC649228700F908819FE19A16CC29A866AD43D2873E504A41783F";
+    url = "https://publicinaccess.blob.core.windows.net/file/steam++.tgz";
+    sha256 = "sha256-TDze5m1gexcIdRdy+nD89Ecx4E04Sm2TP9UTfJjNGIA=";
   };
   
   # 将 buildInputs 定义在 let 块中，使其在整个作用域中可用
