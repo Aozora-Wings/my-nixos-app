@@ -46,7 +46,7 @@ let
       chmod -R +r $out/app/
       
       # 创建启动 Accelerator 的脚本（在容器外运行）
-      mkdir -p $out/bin
+     # mkdir -p $out/bin
       cat > $out/bin/run-accelerator <<'EOF'
 #!/bin/sh
 # 这个脚本会在 FHS 容器内启动 Accelerator
