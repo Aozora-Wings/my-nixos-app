@@ -1,4 +1,5 @@
 { pkgs ? import <nixpkgs> {}
+,stdenv
 , ...
 }:
 
@@ -28,137 +29,190 @@ let
     mv *.dll assemblies/ 2>/dev/null || true
   '';
   
+  # 构建 FHS 环境
+  fhsEnv = pkgs.buildFHSEnv {
+    name = "watt-toolkit";
+    
+    targetPkgs = pkgs: with pkgs; [
+      dotnet-sdk_10
+      glibc
+      zlib
+      openssl
+      libGL
+      libICE
+      libSM
+      libX11
+      libXcursor
+      libXext
+      libXi
+      libXrandr
+      libXrender
+      libXfixes
+      libXdamage
+      libXcomposite
+      libxkbcommon
+      gtk3
+      glib
+      at-spi2-core
+      gdk-pixbuf
+      cairo
+      pango
+      fontconfig.lib
+      nss_latest.tools
+      lttng-ust
+      icu74
+      libunwind
+      libuuid
+      krb5
+      curl
+      alsa-lib
+      pulseaudio
+      bash
+      coreutils
+      findutils
+    ];
+    
+    multiPkgs = pkgs: with pkgs.pkgsi686Linux; [
+      glibc
+      libGL
+      libX11
+      libXcursor
+      libXext
+      libXi
+      libXrandr
+    ];
+    
+    runScript = pkgs.writeShellScript "run-watt-toolkit" ''
+      #!/bin/sh
+      set -e
+      
+      export DOTNET_ROOT="${dotnet-sdk_10}/share/dotnet"
+      export DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1
+      export PATH="${dotnet-sdk_10}/bin:${pkgs.nss_latest}/bin:$PATH"
+      
+      export LD_LIBRARY_PATH="${dotnet-sdk_10}/share/dotnet:${dotnet-sdk_10}/share/dotnet/host/fxr:${lib.makeLibraryPath (with pkgs; [ libGL libICE libSM libXcursor libXext libXi libXrandr ])}:$LD_LIBRARY_PATH"
+      
+      export XDG_DATA_HOME="$HOME/.local/share/WattToolkit"
+      mkdir -p "$XDG_DATA_HOME"
+      
+      APP_DIR="/app"
+      
+      echo "启动 Watt Toolkit..."
+      
+      if [ ! -d "$APP_DIR/assemblies" ]; then
+        mkdir -p "$APP_DIR/assemblies"
+        find "$APP_DIR" -maxdepth 1 -name "*.dll" -exec mv {} "$APP_DIR/assemblies/" \; 2>/dev/null
+      fi
+      
+      if [ -f "$APP_DIR/assemblies/Steam++.dll" ]; then
+        exec ${dotnet-sdk_10}/bin/dotnet "$APP_DIR/assemblies/Steam++.dll" "$@"
+      elif [ -f "$APP_DIR/Steam++.dll" ]; then
+        exec ${dotnet-sdk_10}/bin/dotnet "$APP_DIR/Steam++.dll" "$@"
+      else
+        echo "错误：找不到 Steam++.dll"
+        find "$APP_DIR" -name "*.dll" -type f
+        exit 1
+      fi
+    '';
+    
+    extraBuildCommands = ''
+      mkdir -p $out/app/assemblies
+      cp -r ${unpacked}/* $out/app/
+      
+      if [ -f "$out/app/Steam++.dll" ]; then
+        mv $out/app/Steam++.dll $out/app/assemblies/
+      fi
+      mv $out/app/*.dll $out/app/assemblies/ 2>/dev/null || true
+      
+      mkdir -p $out/app/assemblies/native
+      ln -sf ${pkgs.libGL}/lib/libGL.so.1 $out/app/assemblies/ 2>/dev/null || true
+      ln -sf ${pkgs.libICE}/lib/libICE.so.6 $out/app/assemblies/ 2>/dev/null || true
+      ln -sf ${pkgs.libSM}/lib/libSM.so.6 $out/app/assemblies/ 2>/dev/null || true
+      
+      if [ -d $out/app/Icons ]; then
+        mkdir -p $out/share/icons/hicolor/128x128/apps
+        cp $out/app/Icons/*.png $out/share/icons/hicolor/128x128/apps/ 2>/dev/null || true
+      fi
+      
+      chmod -R +r $out/app/
+    '';
+  };
+  
+  # 获取 fhsenv-rootfs 的路径
+  # fhsEnv 是一个 symlinkJoin，它的实际 rootfs 在它的 store path 中
+  rootfs = builtins.head (builtins.filter 
+    (path: builtins.match ".*-watt-toolkit-fhsenv-rootfs" path != null)
+    (builtins.attrNames (builtins.readDir /nix/store)));
+
 in
-pkgs.buildFHSEnv {
-  name = "watt-toolkit";
+stdenv.mkDerivation {
+  pname = "watt-toolkit";
+  version = "3.1.0";
   
-  targetPkgs = pkgs: with pkgs; [
-    dotnet-sdk_10
-    glibc
-    zlib
-    openssl
-    libGL
-    libICE
-    libSM
-    libX11
-    libXcursor
-    libXext
-    libXi
-    libXrandr
-    libXrender
-    libXfixes
-    libXdamage
-    libXcomposite
-    libxkbcommon
-    gtk3
-    glib
-    at-spi2-core
-    gdk-pixbuf
-    cairo
-    pango
-    fontconfig.lib
-    nss_latest.tools
-    lttng-ust
-    icu74
-    libunwind
-    libuuid
-    krb5
-    curl
-    alsa-lib
-    pulseaudio
-    bash
-    coreutils
-    findutils
-  ];
+  # 声明多个输出
+  outputs = [ "out" "accelerator" ];
   
-  multiPkgs = pkgs: with pkgs.pkgsi686Linux; [
-    glibc
-    libGL
-    libX11
-    libXcursor
-    libXext
-    libXi
-    libXrandr
-  ];
+  src = fhsEnv;
+  dontUnpack = true;
+  dontBuild = true;
   
-  runScript = pkgs.writeShellScript "run-watt-toolkit" ''
-    #!/bin/sh
-    set -e
+  installPhase = ''
+    runHook preInstall
     
-    export DOTNET_ROOT="${dotnet-sdk_10}/share/dotnet"
-    export DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1
-    export PATH="${dotnet-sdk_10}/bin:${pkgs.nss_latest}/bin:$PATH"
+    # 安装主程序（out output）
+    mkdir -p $out/bin
+    cp -r ${fhsEnv}/* $out/
     
-    export LD_LIBRARY_PATH="${dotnet-sdk_10}/share/dotnet:${dotnet-sdk_10}/share/dotnet/host/fxr:${lib.makeLibraryPath (with pkgs; [ libGL libICE libSM libXcursor libXext libXi libXrandr ])}:$LD_LIBRARY_PATH"
+    # 创建主程序包装器的链接
+    ln -sf ${fhsEnv}/bin/watt-toolkit $out/bin/watt-toolkit
     
-    export XDG_DATA_HOME="$HOME/.local/share/WattToolkit"
-    mkdir -p "$XDG_DATA_HOME"
+    # 查找 Accelerator 文件
+    ACCELERATOR_FILE=""
+    ROOTFS_PATH="${fhsEnv}"
     
-    APP_DIR="/app"
-    
-    echo "启动 Watt Toolkit..."
-    
-    if [ ! -d "$APP_DIR/assemblies" ]; then
-      mkdir -p "$APP_DIR/assemblies"
-      find "$APP_DIR" -maxdepth 1 -name "*.dll" -exec mv {} "$APP_DIR/assemblies/" \; 2>/dev/null
+    # 尝试在 rootfs 中查找
+    if [ -f "$ROOTFS_PATH/app/modules/Accelerator/Steam++.Accelerator" ]; then
+      ACCELERATOR_FILE="$ROOTFS_PATH/app/modules/Accelerator/Steam++.Accelerator"
+    elif [ -f "$ROOTFS_PATH/app/Accelerator/Steam++.Accelerator" ]; then
+      ACCELERATOR_FILE="$ROOTFS_PATH/app/Accelerator/Steam++.Accelerator"
+    elif [ -f "$ROOTFS_PATH/app/assemblies/Accelerator/Steam++.Accelerator" ]; then
+      ACCELERATOR_FILE="$ROOTFS_PATH/app/assemblies/Accelerator/Steam++.Accelerator"
     fi
     
-    if [ -f "$APP_DIR/assemblies/Steam++.dll" ]; then
-      exec ${dotnet-sdk_10}/bin/dotnet "$APP_DIR/assemblies/Steam++.dll" "$@"
-    elif [ -f "$APP_DIR/Steam++.dll" ]; then
-      exec ${dotnet-sdk_10}/bin/dotnet "$APP_DIR/Steam++.dll" "$@"
-    else
-      echo "错误：找不到 Steam++.dll"
-      find "$APP_DIR" -name "*.dll" -type f
-      exit 1
-    fi
-  '';
-  
-  extraBuildCommands = ''
-    # 复制应用文件到 /app（不要创建 bin 目录，它已经存在）
-    mkdir -p $out/app/assemblies
-    cp -r ${unpacked}/* $out/app/
+    # 安装 Accelerator 到单独的 output
+    mkdir -p $accelerator/bin
     
-    # 确保所有 .dll 文件都在 assemblies 目录中
-    if [ -f "$out/app/Steam++.dll" ]; then
-      mv $out/app/Steam++.dll $out/app/assemblies/
-    fi
-    mv $out/app/*.dll $out/app/assemblies/ 2>/dev/null || true
-    
-    # 创建符号链接到系统库
-    mkdir -p $out/app/assemblies/native
-    ln -sf ${pkgs.libGL}/lib/libGL.so.1 $out/app/assemblies/ 2>/dev/null || true
-    ln -sf ${pkgs.libICE}/lib/libICE.so.6 $out/app/assemblies/ 2>/dev/null || true
-    ln -sf ${pkgs.libSM}/lib/libSM.so.6 $out/app/assemblies/ 2>/dev/null || true
-    
-    # 创建图标目录
-    if [ -d $out/app/Icons ]; then
-      mkdir -p $out/share/icons/hicolor/128x128/apps
-      cp $out/app/Icons/*.png $out/share/icons/hicolor/128x128/apps/ 2>/dev/null || true
-    fi
-    
-    chmod -R +r $out/app/
-    
-    # 创建 Accelerator 启动器（使用已存在的 bin 目录，不要 mkdir）
-    cat > $out/bin/run-accelerator <<'EOF'
+    if [ -n "$ACCELERATOR_FILE" ] && [ -f "$ACCELERATOR_FILE" ]; then
+      echo "找到 Accelerator: $ACCELERATOR_FILE"
+      
+      # 创建 Accelerator 启动脚本
+      cat > $accelerator/bin/steampp-accelerator <<EOF
 #!/bin/sh
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-ROOTFS="$SCRIPT_DIR/.."
-
-if [ -f "$ROOTFS/app/modules/Accelerator/Steam++.Accelerator" ]; then
-    ACCELERATOR="$ROOTFS/app/modules/Accelerator/Steam++.Accelerator"
-elif [ -f "$ROOTFS/app/Accelerator/Steam++.Accelerator" ]; then
-    ACCELERATOR="$ROOTFS/app/Accelerator/Steam++.Accelerator"
-else
-    echo "错误: 找不到 Accelerator"
-    exit 1
-fi
-
+# Accelerator launcher for Watt Toolkit
 export DOTNET_ROOT="${dotnet-sdk_10}/share/dotnet"
-export PATH="$DOTNET_ROOT/bin:$PATH"
-exec dotnet "$ACCELERATOR" "$@"
+export PATH="\$DOTNET_ROOT/bin:\$PATH"
+export LD_LIBRARY_PATH="${lib.makeLibraryPath (with pkgs; [ libGL libICE libSM ])}"
+
+# 运行 Accelerator
+exec dotnet "$ACCELERATOR_FILE" "\$@"
 EOF
-    chmod +x $out/bin/run-accelerator
-    ln -sf run-accelerator $out/bin/Steam++.Accelerator
+      chmod +x $accelerator/bin/steampp-accelerator
+      
+      # 创建符号链接
+      ln -sf steampp-accelerator $accelerator/bin/Steam++.Accelerator
+    else
+      echo "警告: 未找到 Accelerator 文件"
+      find "$ROOTFS_PATH" -name "*.Accelerator" -o -name "*accelerator*" 2>/dev/null || true
+    fi
+    
+    runHook postInstall
   '';
+  
+  meta = {
+    description = "Watt Toolkit (Steam++)";
+    homepage = "https://steampp.net";
+    license = lib.licenses.gpl3Only;
+    mainProgram = "watt-toolkit";
+    platforms = [ "x86_64-linux" ];
+  };
 }
