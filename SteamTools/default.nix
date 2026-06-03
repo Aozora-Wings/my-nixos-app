@@ -1,170 +1,167 @@
-{ lib,
-  stdenv,
-  fetchurl,
-  autoPatchelfHook,
-  dotnetCorePackages,
-  pkgs,
-  ... }:
+{ pkgs ? import <nixpkgs> {} }:
 
 let
-  dotnet-sdk_10 = dotnetCorePackages.sdk_10_0;
-  dotnet-runtime_10 = dotnetCorePackages.runtime_10_0;
+  lib = pkgs.lib;  # 添加这一行
+  dotnet-sdk_10 = pkgs.dotnetCorePackages.sdk_10_0;
   
-  pname = "WattToolkit";
-  version = "3.1.0";
-  
-  src = fetchurl {
-    url = "https://publicinaccess.blob.core.windows.net/file/steam++.tgz";
-    sha256 = "sha256-lp9NViBP9ngdzEaTeqsgWrdDB17jGc1ui1JV/i8IZbU=";
+  src = pkgs.fetchurl {
+    url = "https://publicinaccess.blob.core.windows.net/file/Steam++.tgz";
+    sha256 = "sha256-bEiiYsBO4iBoqW0x+oXriRof30NqwDmUlurC+t3xQjw=";
   };
   
-  myBuildInputs = with pkgs; [
-    lttng-ust
-    icu74
-    openssl
+  unpacked = pkgs.runCommand "steam++-unpacked" {} ''
+    mkdir -p $out
+    cd $out
+    tar -xzf ${src}
+    if [ -d "Steam++" ]; then
+      mv Steam++/* ./
+      rmdir Steam++
+    fi
+    
+    # 确保 assemblies 目录存在
+    mkdir -p assemblies
+    if [ -f "Steam++.dll" ]; then
+      mv Steam++.dll assemblies/ 2>/dev/null || true
+    fi
+    
+    # 移动其他可能的 DLL 文件
+    mv *.dll assemblies/ 2>/dev/null || true
+  '';
+  
+in
+pkgs.buildFHSEnv {
+  name = "watt-toolkit";
+  
+  targetPkgs = pkgs: with pkgs; [
+    # .NET 运行时
+    dotnet-sdk_10
+    
+    # 核心系统库
+    glibc
     zlib
-    fontconfig.lib
-    nss_latest
-    libX11
+    openssl
+    
+    # X11 相关（从缺失列表看很重要）
+    libGL
     libICE
     libSM
+    libX11
+    libXcursor
+    libXext
+    libXi
+    libXrandr
+    libXrender
+    libXfixes
+    libXdamage
+    libXcomposite
+    libxkbcommon
+    
+    # GUI 相关
+    gtk3
+    glib
+    at-spi2-core
+    gdk-pixbuf
+    cairo
+    pango
+    
+    # 系统库
+    fontconfig.lib
+    nss_latest.tools
+    lttng-ust
+    icu74
     libunwind
     libuuid
     krb5
     curl
-    gtk3
-    glib
-    at-spi2-core
+    
+    # 音频相关（如果需要）
+    alsa-lib
+    pulseaudio
+    
+    # 其他可能需要的
+    bash
+    coreutils
+    findutils
   ];
   
-  meta = {
-    description = "Steam Tools";
-    homepage = "https://steampp.net";
-    license = lib.licenses.gpl3Only;
-    sourceProvenance = with lib.sourceTypes; [ binaryNativeCode ];
-    mainProgram = "watt-toolkit";
-    platforms = [ "x86_64-linux" ];
-  };
-  
-in
-stdenv.mkDerivation {
-  inherit pname version src meta;
-  
-  nativeBuildInputs = [
-    autoPatchelfHook
-    dotnet-sdk_10
-    pkgs.makeWrapper
-    pkgs.steam-run  # 添加 steam-run 作为构建依赖
+  # 多架构支持（32位库，某些游戏可能需要）
+  multiPkgs = pkgs: with pkgs.pkgsi686Linux; [
+    glibc
+    libGL
+    libX11
+    libXcursor
+    libXext
+    libXi
+    libXrandr
   ];
   
-  # 使用 let 块中定义的 myBuildInputs
-  buildInputs = myBuildInputs;
-  
-  # 设置自动补丁排除列表，避免修补 .NET 运行时的文件
-  dontAutoPatchelf = true;
-  
-  unpackPhase = ''
-    mkdir temp
-    tar -xzf $src -C temp
-    mv temp/* .
-  '';
-  
-  installPhase = ''
-    runHook preInstall
+  runScript = pkgs.writeShellScript "run-watt-toolkit" ''
+    #!/bin/sh
+    set -e
     
-    # 复制所有文件到输出目录
-    mkdir -p $out/bin
-    cp -r . $out/bin
+    # 设置 .NET 环境
+    export DOTNET_ROOT="${dotnet-sdk_10}/share/dotnet"
+    export DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1
+    export PATH="${dotnet-sdk_10}/bin:${pkgs.nss_latest}/bin:$PATH"
     
-    # 为应用程序的所有可执行文件和共享库设置 RPATH
-    # 包括 ELF 可执行文件、共享库和 .NET 自包含应用程序
-    echo "修补 ELF 文件..."
+    # 设置库路径（包括所有可能需要的路径）
+    export LD_LIBRARY_PATH="${dotnet-sdk_10}/share/dotnet:${dotnet-sdk_10}/share/dotnet/host/fxr:${lib.makeLibraryPath (with pkgs; [ libGL libICE libSM libXcursor libXext libXi libXrandr ])}:$LD_LIBRARY_PATH"
     
-    # 1. 修补所有 .so 文件
-    find $out/bin -type f -name "*.so" -exec patchelf --add-rpath "${lib.makeLibraryPath myBuildInputs}" {} \; 2>/dev/null || true
+    # 设置数据目录
+    export XDG_DATA_HOME="$HOME/.local/share/WattToolkit"
+    mkdir -p "$XDG_DATA_HOME"
     
-    # 2. 修补所有 ELF 可执行文件（包括 Steam++.Accelerator）
-    find $out/bin -type f -executable -exec sh -c 'file "$1" | grep -q "ELF"' _ {} \; \
-      -exec patchelf --add-rpath "${lib.makeLibraryPath myBuildInputs}" {} \; 2>/dev/null || true
+    # 应用目录
+    APP_DIR="/app"
     
-    # 3. 特别修补 modules/Accelerator/Steam++.Accelerator
-    if [ -f "$out/bin/modules/Accelerator/Steam++.Accelerator" ]; then
-      echo "修补加速器模块..."
-      patchelf --add-rpath "${lib.makeLibraryPath myBuildInputs}" "$out/bin/modules/Accelerator/Steam++.Accelerator" 2>/dev/null || true
-      # 设置解释器
-      patchelf --set-interpreter "$(cat $NIX_CC/nix-support/dynamic-linker)" "$out/bin/modules/Accelerator/Steam++.Accelerator" 2>/dev/null || true
+    echo "启动 Watt Toolkit..."
+    echo "DOTNET_ROOT: $DOTNET_ROOT"
+    echo "LD_LIBRARY_PATH: $LD_LIBRARY_PATH"
+    
+    # 确保 assemblies 目录存在
+    if [ ! -d "$APP_DIR/assemblies" ]; then
+      mkdir -p "$APP_DIR/assemblies"
+      # 移动可能存在的 DLL 文件
+      find "$APP_DIR" -maxdepth 1 -name "*.dll" -exec mv {} "$APP_DIR/assemblies/" \;
     fi
     
-    # 4. 检查是否是 .NET 自包含应用程序，并设置解释器
-    find $out/bin -type f -executable -exec sh -c '
-      file "$1" | grep -q "ELF" && {
-        # 如果是 ELF 文件，设置正确的解释器
-        patchelf --set-interpreter "$(cat $NIX_CC/nix-support/dynamic-linker)" "$1" 2>/dev/null || true
-      }
-    ' _ {} \;
+    # 运行程序
+    if [ -f "$APP_DIR/assemblies/Steam++.dll" ]; then
+      exec ${dotnet-sdk_10}/bin/dotnet "$APP_DIR/assemblies/Steam++.dll" "$@"
+    elif [ -f "$APP_DIR/Steam++.dll" ]; then
+      exec ${dotnet-sdk_10}/bin/dotnet "$APP_DIR/Steam++.dll" "$@"
+    else
+      echo "错误：找不到 Steam++.dll"
+      echo "查找所有 .dll 文件："
+      find "$APP_DIR" -name "*.dll" -type f
+      exit 1
+    fi
+  '';
+  
+  extraBuildCommands = ''
+    # 复制应用文件到 /app
+    mkdir -p $out/app/assemblies
+    cp -r ${unpacked}/* $out/app/
     
-    # 创建基础启动脚本（不使用 steam-run）
-    cat > $out/bin/watt-toolkit-base <<'EOF'
-#!/bin/sh
-export DOTNET_ROOT="@DOTNET_ROOT@"
-export PATH="@DOTNET_ROOT@/bin:$PATH"
-export LD_LIBRARY_PATH="\
-@LIB_LTTNG_UST@/lib:\
-@LIB_ICU74@/lib:\
-@LIB_OPENSSL@/lib:\
-@LIB_ZLIB@/lib:\
-@LIB_FONTCONFIG@/lib:\
-@LIB_NSS@/lib:\
-@LIB_X11@/lib:\
-@LIB_ICE@/lib:\
-@LIB_SM@/lib:\
-''${LD_LIBRARY_PATH:-}"
+    # 确保所有 .dll 文件都在 assemblies 目录中
+    if [ -f "$out/app/Steam++.dll" ]; then
+      mv $out/app/Steam++.dll $out/app/assemblies/
+    fi
+    mv $out/app/*.dll $out/app/assemblies/ 2>/dev/null || true
     
-exec "@DOTNET_ROOT@/bin/dotnet" "@APP_DIR@/assemblies/Steam++.dll" "$@"
-EOF
+    # 创建符号链接到系统库（如果需要）
+    mkdir -p $out/app/assemblies/native
+    ln -sf ${pkgs.libGL}/lib/libGL.so.1 $out/app/assemblies/ 2>/dev/null || true
+    ln -sf ${pkgs.libICE}/lib/libICE.so.6 $out/app/assemblies/ 2>/dev/null || true
+    ln -sf ${pkgs.libSM}/lib/libSM.so.6 $out/app/assemblies/ 2>/dev/null || true
     
-    # 替换基础脚本中的占位符变量
-    substituteInPlace $out/bin/watt-toolkit-base \
-      --subst-var-by DOTNET_ROOT "${dotnet-sdk_10}" \
-      --subst-var-by APP_DIR "$out/bin" \
-      --subst-var-by LIB_LTTNG_UST "${pkgs.lttng-ust}" \
-      --subst-var-by LIB_ICU74 "${pkgs.icu74}" \
-      --subst-var-by LIB_OPENSSL "${pkgs.openssl}" \
-      --subst-var-by LIB_ZLIB "${pkgs.zlib}" \
-      --subst-var-by LIB_FONTCONFIG "${pkgs.fontconfig.lib}" \
-      --subst-var-by LIB_NSS "${pkgs.nss_latest}" \
-      --subst-var-by LIB_X11 "${pkgs.libX11}" \
-      --subst-var-by LIB_ICE "${pkgs.libICE}" \
-      --subst-var-by LIB_SM "${pkgs.libSM}"
-    
-    chmod +x $out/bin/watt-toolkit-base
-    
-    # 创建 steam-run 包装的主脚本
-    # 这个脚本会调用基础脚本，但通过 steam-run 运行
-    makeWrapper ${pkgs.steam-run}/bin/steam-run $out/bin/watt-toolkit \
-      --add-flags "$out/bin/watt-toolkit-base" \
-      --set LD_LIBRARY_PATH "${lib.makeLibraryPath myBuildInputs}:$LD_LIBRARY_PATH" \
-      --set DOTNET_ROOT "${dotnet-sdk_10}/share/dotnet"
-    
-    # 可选：创建直接运行的版本（用于对比测试）
-    ln -s $out/bin/watt-toolkit-base $out/bin/watt-toolkit-direct
-    
-    # 创建桌面文件（如果存在图标）
-    if [ -f "$out/bin/Icons/Watt-Toolkit.png" ]; then
-      mkdir -p $out/share/applications
-      cat > $out/share/applications/watt-toolkit.desktop <<EOF
-[Desktop Entry]
-Type=Application
-Name=WattToolkit
-Comment=Steam Tools
-Exec=$out/bin/watt-toolkit
-Icon=$out/bin/Icons/Watt-Toolkit.png
-Categories=Utility;
-EOF
-      chmod 644 $out/share/applications/watt-toolkit.desktop
+    # 创建图标目录
+    if [ -d $out/app/Icons ]; then
+      mkdir -p $out/share/icons/hicolor/128x128/apps
+      cp $out/app/Icons/*.png $out/share/icons/hicolor/128x128/apps/ 2>/dev/null || true
     fi
     
-    runHook postInstall
+    # 设置权限
+    chmod -R +r $out/app/
   '';
-  autoPatchelfIgnoreMissingDeps = [];
 }
