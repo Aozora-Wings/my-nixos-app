@@ -1,5 +1,6 @@
-{ pkgs ? import <nixpkgs> {} }:
-
+{ pkgs ? import <nixpkgs> {}
+, ...  # 添加这个，接受任意额外参数
+}:
 let
   lib = pkgs.lib;  # 添加这一行
   dotnet-sdk_10 = pkgs.dotnetCorePackages.sdk_10_0;
