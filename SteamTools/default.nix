@@ -15,20 +15,26 @@ let
   
   src = fetchurl {
     url = "https://publicinaccess.blob.core.windows.net/file/steam++.tgz";
-    sha256 = "sha256-EiCyoQ1NX8UjCus9V1swZjzv/CBpkA3Opo3pvLlIskc=";
+    sha256 = "sha256-lp9NViBP9ngdzEaTeqsgWrdDB17jGc1ui1JV/i8IZbU=";
   };
   
-  # 将 buildInputs 定义在 let 块中，使其在整个作用域中可用
-  myBuildInputs = [
-    pkgs.lttng-ust
-    pkgs.icu74
-    pkgs.openssl
-    pkgs.zlib
-    pkgs.fontconfig.lib
-    pkgs.nss_latest
-    pkgs.libX11
-    pkgs.libICE
-    pkgs.libSM
+  myBuildInputs = with pkgs; [
+    lttng-ust
+    icu74
+    openssl
+    zlib
+    fontconfig.lib
+    nss_latest
+    libX11
+    libICE
+    libSM
+    libunwind
+    libuuid
+    krb5
+    curl
+    gtk3
+    glib
+    at-spi2-core
   ];
   
   meta = {
@@ -160,4 +166,5 @@ EOF
     
     runHook postInstall
   '';
+  autoPatchelfIgnoreMissingDeps = [];
 }
