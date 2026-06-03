@@ -29,7 +29,6 @@ let
     mv *.dll assemblies/ 2>/dev/null || true
   '';
   
-  # 构建 FHS 环境
   fhsEnv = pkgs.buildFHSEnv {
     name = "watt-toolkit";
     
@@ -138,12 +137,6 @@ let
     '';
   };
   
-  # 获取 fhsenv-rootfs 的路径
-  # fhsEnv 是一个 symlinkJoin，它的实际 rootfs 在它的 store path 中
-  rootfs = builtins.head (builtins.filter 
-    (path: builtins.match ".*-watt-toolkit-fhsenv-rootfs" path != null)
-    (builtins.attrNames (builtins.readDir /nix/store)));
-
 in
 stdenv.mkDerivation {
   pname = "watt-toolkit";
@@ -162,47 +155,31 @@ stdenv.mkDerivation {
     # 安装主程序（out output）
     mkdir -p $out/bin
     cp -r ${fhsEnv}/* $out/
-    
-    # 创建主程序包装器的链接
     ln -sf ${fhsEnv}/bin/watt-toolkit $out/bin/watt-toolkit
+    
+    # 直接从 unpacked 中查找并复制 Accelerator 到单独的 output
+    mkdir -p $accelerator/bin
     
     # 查找 Accelerator 文件
     ACCELERATOR_FILE=""
-    ROOTFS_PATH="${fhsEnv}"
-    
-    # 尝试在 rootfs 中查找
-    if [ -f "$ROOTFS_PATH/app/modules/Accelerator/Steam++.Accelerator" ]; then
-      ACCELERATOR_FILE="$ROOTFS_PATH/app/modules/Accelerator/Steam++.Accelerator"
-    elif [ -f "$ROOTFS_PATH/app/Accelerator/Steam++.Accelerator" ]; then
-      ACCELERATOR_FILE="$ROOTFS_PATH/app/Accelerator/Steam++.Accelerator"
-    elif [ -f "$ROOTFS_PATH/app/assemblies/Accelerator/Steam++.Accelerator" ]; then
-      ACCELERATOR_FILE="$ROOTFS_PATH/app/assemblies/Accelerator/Steam++.Accelerator"
+    if [ -f "${unpacked}/modules/Accelerator/Steam++.Accelerator" ]; then
+      ACCELERATOR_FILE="${unpacked}/modules/Accelerator/Steam++.Accelerator"
+    elif [ -f "${unpacked}/Accelerator/Steam++.Accelerator" ]; then
+      ACCELERATOR_FILE="${unpacked}/Accelerator/Steam++.Accelerator"
+    elif [ -f "${unpacked}/Steam++.Accelerator" ]; then
+      ACCELERATOR_FILE="${unpacked}/Steam++.Accelerator"
     fi
-    
-    # 安装 Accelerator 到单独的 output
-    mkdir -p $accelerator/bin
     
     if [ -n "$ACCELERATOR_FILE" ] && [ -f "$ACCELERATOR_FILE" ]; then
       echo "找到 Accelerator: $ACCELERATOR_FILE"
       
-      # 创建 Accelerator 启动脚本
-      cat > $accelerator/bin/steampp-accelerator <<EOF
-#!/bin/sh
-# Accelerator launcher for Watt Toolkit
-export DOTNET_ROOT="${dotnet-sdk_10}/share/dotnet"
-export PATH="\$DOTNET_ROOT/bin:\$PATH"
-export LD_LIBRARY_PATH="${lib.makeLibraryPath (with pkgs; [ libGL libICE libSM ])}"
-
-# 运行 Accelerator
-exec dotnet "$ACCELERATOR_FILE" "\$@"
-EOF
-      chmod +x $accelerator/bin/steampp-accelerator
+      # 复制 Accelerator 文件
+      cp "$ACCELERATOR_FILE" $accelerator/bin/Steam++.Accelerator
+      chmod +x $accelerator/bin/Steam++.Accelerator
       
-      # 创建符号链接
-      ln -sf steampp-accelerator $accelerator/bin/Steam++.Accelerator
     else
       echo "警告: 未找到 Accelerator 文件"
-      find "$ROOTFS_PATH" -name "*.Accelerator" -o -name "*accelerator*" 2>/dev/null || true
+      find ${unpacked} -name "*.Accelerator" -o -name "*accelerator*" 2>/dev/null || true
     fi
     
     runHook postInstall
