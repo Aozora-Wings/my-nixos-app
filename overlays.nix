@@ -37,6 +37,7 @@
         qq-my = prev.callPackage ./qq { };
         pc115-my = prev.callPackage ./pc115 { inherit commonLibs; };
         osu-my = prev.callPackage ./osu { };
+        traecn-my = prev.callPackage ./traecn { };
         SteamTools-my = prev.callPackage ./SteamTools {
   nixUnstable = prev.nixUnstable;
 };
