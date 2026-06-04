@@ -6,7 +6,7 @@ let
   lib = pkgs.lib;
   version = "2.3.33255";
   src = pkgs.fetchurl {
-    url = "https://lf-cdn.trae.com.cn/obj/trae-com-cn/pkg/app/releases/stable/{$version}/linux/Trae_CN-linux-x64.deb";
+    url = "https://lf-cdn.trae.com.cn/obj/trae-com-cn/pkg/app/releases/stable/${version}/linux/Trae_CN-linux-x64.deb";
     sha256 = "sha256-VX56wn7cyafU+x6ouBfaEnIaccYzy3HmgxSIHxtDNDM=";
   };
   
@@ -71,8 +71,8 @@ let
     export GDK_BACKEND=x11
     
     # 输入法支持
-    export GTK_IM_MODULE=fcitx
-    export QT_IM_MODULE=fcitx
+    # export GTK_IM_MODULE=fcitx
+    # export QT_IM_MODULE=fcitx
     export XMODIFIERS=@im=fcitx
     export INPUT_METHOD=fcitx
     export GLFW_IM_MODULE=ibus
@@ -246,8 +246,8 @@ let
       mkdir -p $out/etc/profile.d
       cat > $out/etc/profile.d/fcitx.sh << 'EOF'
 #!/bin/sh
-export GTK_IM_MODULE=fcitx
-export QT_IM_MODULE=fcitx
+#export GTK_IM_MODULE=fcitx
+#export QT_IM_MODULE=fcitx
 export XMODIFIERS=@im=fcitx
 export INPUT_METHOD=fcitx
 EOF
