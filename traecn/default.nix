@@ -304,7 +304,10 @@ stdenv.mkDerivation {
     # 安装主程序（out output）
     mkdir -p $out/share/applications
     mkdir -p $out/share/icons/hicolor/128x128/apps
-  ln -sf ${unpacked}/share/applications/trae-cn.desktop $out/share/applications/trae-cn.desktop
+    cp ${unpacked}/share/applications/trae-cn.desktop $out/share/applications/trae-cn.desktop
+  substituteInPlace $out/share/applications/trae-cn.desktop \
+    --replace-fail "/usr/share/trae-cn/trae-cn" "trae-cn"
+
   ln -sf ${unpacked}/share/pixmaps/trae-cn.png $out/share/icons/hicolor/128x128/apps/trae-cn.png
     mkdir -p $out/bin
     cp -r ${fhsEnv}/* $out/
