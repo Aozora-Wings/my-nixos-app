@@ -46,6 +46,102 @@ let
     ln -sf share/trae-cn/lib*.so lib/ 2>/dev/null || true
   '';
   
+  # 创建启动脚本
+  startupScript = pkgs.writeShellScript "trae-cn-start" ''
+    #!/bin/sh
+    set -e
+    cp -f "$HOME/.ssh/config" "$HOME/.ssh/config.bak"
+    rm -f "$HOME/.ssh/config"
+    mv "$HOME/.ssh/config.bak" "$HOME/.ssh/config"
+    chmod 644 "$HOME/.ssh/config"
+    
+    export APP_DIR="/app"
+    export TRAE_CN_HOME="$HOME/.config/Trae CN"
+    
+    # 创建配置目录
+    mkdir -p "$TRAE_CN_HOME"
+    mkdir -p "$HOME/.trae-cn"
+    
+    # 设置 OpenGL 相关环境变量
+    export LD_LIBRARY_PATH="/run/opengl-driver/lib:/run/opengl-driver/lib32:$APP_DIR/share/trae-cn:$APP_DIR/share/trae-cn/resources/app/modules/ckg/binary:$LD_LIBRARY_PATH"
+    
+    # 强制使用 X11 后端（解决 Wayland 下的 OpenGL 问题）
+    export QT_QPA_PLATFORM=xcb
+    export GDK_BACKEND=x11
+    
+    # 输入法支持
+    export GTK_IM_MODULE=fcitx
+    export QT_IM_MODULE=fcitx
+    export XMODIFIERS=@im=fcitx
+    export INPUT_METHOD=fcitx
+    export GLFW_IM_MODULE=ibus
+    
+    # SSH Agent 支持 - 查找主机 SSH agent socket
+    SSH_AUTH_SOCK_EXPORTED=""
+    
+    # 尝试多个可能的 SSH agent socket 位置
+    for possible_socket in "$SSH_AUTH_SOCK" "$HOME/.bitwarden-ssh-agent.sock" "/run/user/$UID/keyring/ssh" "/run/user/$UID/gnupg/S.gpg-agent.ssh" "$HOME/.ssh/ssh_auth_sock"; do
+      if [ -S "$possible_socket" ] 2>/dev/null; then
+        SSH_AUTH_SOCK_EXPORTED="$possible_socket"
+        break
+      fi
+    done
+    
+    # 也尝试查找 gcr 的 ssh agent
+    for gcr_socket in /run/user/$UID/gcr/ssh-*; do
+      if [ -S "$gcr_socket" ] 2>/dev/null; then
+        SSH_AUTH_SOCK_EXPORTED="$gcr_socket"
+        break
+      fi
+    done
+    
+    # 尝试通配符匹配
+    for possible_socket in /tmp/ssh-*/agent.*; do
+      if [ -S "$possible_socket" ] 2>/dev/null; then
+        SSH_AUTH_SOCK_EXPORTED="$possible_socket"
+        break
+      fi
+    done
+    
+    if [ -n "$SSH_AUTH_SOCK_EXPORTED" ]; then
+      export SSH_AUTH_SOCK="$SSH_AUTH_SOCK_EXPORTED"
+      echo "SSH Agent 已连接: $SSH_AUTH_SOCK"
+    else
+      echo "警告: 未找到 SSH agent socket"
+    fi
+    
+    # 导出 SSH 相关环境变量
+    export SSH_ASKPASS="${pkgs.openssh}/libexec/ssh-askpass"
+    
+    # 禁用 GPU sandbox 但保留 GPU 加速
+    export DISABLE_GPU_SANDBOX=1
+    
+    # Electron 环境
+    export ELECTRON_FORCE_IS_PACKAGED=true
+    export ENABLE_IPC_SERVER=true
+    export TRAE_RUNTIME=local
+    export TRAE_STATIC_CLIENT_TYPE=ide
+    
+    # 确保 PATH 包含常用工具和系统命令
+    export PATH="$PATH:/run/current-system/sw/bin:/run/wrappers/bin"
+    
+    # 启动应用
+    if [ -f "$APP_DIR/share/trae-cn/trae-cn" ]; then
+      exec "$APP_DIR/share/trae-cn/trae-cn" \
+        --no-sandbox \
+        --disable-gpu-sandbox \
+        --use-gl=desktop \
+        --ignore-gpu-blocklist \
+        --enable-features=UseOzonePlatform \
+        --ozone-platform=x11 \
+        "$@"
+    else
+      echo "错误：找不到 trae-cn 可执行文件"
+      find "$APP_DIR" -name "trae-cn" -type f
+      exit 1
+    fi
+  '';
+  
   # 创建 FHS 环境
   fhsEnv = pkgs.buildFHSEnv {
     name = "trae-cn-fhs";
@@ -110,6 +206,16 @@ let
       udev
       libnotify
       
+      # 输入法支持
+      fcitx5
+      fcitx5-gtk
+      kdePackages.fcitx5-qt
+      libsForQt5.qt5.qtbase
+      
+      # Git 和 SSH 支持
+      git
+      openssh
+      
       # 运行时工具
       bash
       coreutils
@@ -125,49 +231,7 @@ let
       libglvnd
     ];
     
-    runScript = pkgs.writeShellScript "run-trae-cn" ''
-      #!/bin/sh
-      set -e
-      
-      export APP_DIR="/app"
-      export TRAE_CN_HOME="$HOME/.config/Trae CN"
-      
-      # 创建配置目录
-      mkdir -p "$TRAE_CN_HOME"
-      mkdir -p "$HOME/.trae-cn"
-      
-      # 设置 OpenGL 相关环境变量
-      export LD_LIBRARY_PATH="/run/opengl-driver/lib:/run/opengl-driver/lib32:$APP_DIR/share/trae-cn:$APP_DIR/share/trae-cn/resources/app/modules/ckg/binary:$LD_LIBRARY_PATH"
-      
-      # 强制使用 X11 后端（解决 Wayland 下的 OpenGL 问题）
-      export QT_QPA_PLATFORM=xcb
-      export GDK_BACKEND=x11
-      
-      # 禁用 GPU sandbox 但保留 GPU 加速
-      export DISABLE_GPU_SANDBOX=1
-      
-      # Electron 环境
-      export ELECTRON_FORCE_IS_PACKAGED=true
-      export ENABLE_IPC_SERVER=true
-      export TRAE_RUNTIME=local
-      export TRAE_STATIC_CLIENT_TYPE=ide
-      
-      # 启动应用（使用 --use-gl=egl 或 --use-gl=desktop）
-      if [ -f "$APP_DIR/share/trae-cn/trae-cn" ]; then
-        exec "$APP_DIR/share/trae-cn/trae-cn" \
-          --no-sandbox \
-          --disable-gpu-sandbox \
-          --use-gl=desktop \
-          --ignore-gpu-blocklist \
-          --enable-features=UseOzonePlatform \
-          --ozone-platform=x11 \
-          "$@"
-      else
-        echo "错误：找不到 trae-cn 可执行文件"
-        find "$APP_DIR" -name "trae-cn" -type f
-        exit 1
-      fi
-    '';
+    runScript = startupScript;
     
     extraBuildCommands = ''
       mkdir -p $out/app
@@ -177,41 +241,48 @@ let
       chmod +x $out/app/share/trae-cn/trae-cn 2>/dev/null || true
       chmod 0755 $out/app/share/trae-cn/chrome-sandbox 2>/dev/null || true
       
-      # 创建 bin 目录
-      #mkdir -p $out/bin
-      
-      # 创建启动脚本包装器
-      cat > $out/app/trae-cn << EOF
+      # 创建输入法配置文件
+      mkdir -p $out/etc/profile.d
+      cat > $out/etc/profile.d/fcitx.sh << 'EOF'
 #!/bin/sh
-exec $out/app/share/trae-cn/trae-cn \\
-  --no-sandbox \\
-  --disable-gpu-sandbox \\
-  --use-gl=desktop \\
-  --ignore-gpu-blocklist \\
-  "\$@"
+export GTK_IM_MODULE=fcitx
+export QT_IM_MODULE=fcitx
+export XMODIFIERS=@im=fcitx
+export INPUT_METHOD=fcitx
 EOF
-      #chmod +x $out/bin/trae-cn
+      chmod +x $out/etc/profile.d/fcitx.sh
       
-      # 创建 desktop 文件
-      mkdir -p $out/share/applications
-      cat > $out/share/applications/trae-cn.desktop << 'EOF'
-[Desktop Entry]
-Name=Trae CN
-Comment=Trae CN IDE
-Exec=trae-cn %F
-Icon=trae-cn
-Terminal=false
-Type=Application
-Categories=Development;IDE;
-StartupWMClass=Trae CN
-MimeType=text/plain;inode/directory;
-EOF
+#       # 创建 /usr/bin 的 wrapper（因为 bin 被链接到 /usr/bin）
+#       #mkdir -p $out/usr/bin
       
-      # 复制图标
-      if [ -d "$out/app/share/trae-cn/resources/app/resources/linux" ]; then
-        mkdir -p $out/share/icons/hicolor/128x128/apps
-        cp $out/app/share/trae-cn/resources/app/resources/linux/*.png $out/share/icons/hicolor/128x128/apps/ 2>/dev/null || true
-      fi
+#       # SSH wrapper
+#       cat > $out/usr/bin/ssh << EOF
+# #!/bin/sh
+# exec ${pkgs.openssh}/bin/ssh "\$@"
+# EOF
+#       chmod +x $out/usr/bin/ssh
+      
+#       cat > $out/usr/bin/ssh-add << EOF
+# #!/bin/sh
+# exec ${pkgs.openssh}/bin/ssh-add "\$@"
+# EOF
+#       chmod +x $out/usr/bin/ssh-add
+      
+#       cat > $out/usr/bin/ssh-keygen << EOF
+# #!/bin/sh
+# exec ${pkgs.openssh}/bin/ssh-keygen "\$@"
+# EOF
+#       chmod +x $out/usr/bin/ssh-keygen
+      
+#       # Git wrapper
+#       cat > $out/usr/bin/git << EOF
+# #!/bin/sh
+# exec ${pkgs.git}/bin/git "\$@"
+# EOF
+#       chmod +x $out/usr/bin/git
+      
+#       # 创建符号链接到 app 目录的启动脚本
+#       ln -sf /app/share/trae-cn/trae-cn $out/usr/bin/trae-cn 2>/dev/null || true
     '';
   };
   
