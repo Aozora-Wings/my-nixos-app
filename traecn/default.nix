@@ -1,11 +1,12 @@
 { pkgs ? import <nixpkgs> {}
+,stdenv
 , ...
 }:
 let
   lib = pkgs.lib;
-  
+  version = "2.3.33255";
   src = pkgs.fetchurl {
-    url = "https://lf-cdn.trae.com.cn/obj/trae-com-cn/pkg/app/releases/stable/2.3.33255/linux/Trae_CN-linux-x64.deb";
+    url = "https://lf-cdn.trae.com.cn/obj/trae-com-cn/pkg/app/releases/stable/{$version}/linux/Trae_CN-linux-x64.deb";
     sha256 = "sha256-VX56wn7cyafU+x6ouBfaEnIaccYzy3HmgxSIHxtDNDM=";
   };
   
@@ -262,7 +263,7 @@ EOF
 # EOF
 #       chmod +x $out/usr/bin/ssh
       
-#       cat > $out/usr/bin/ssh-add << EOF
+#       cat > $out/usr/bin/ssh-add << EOFstartupScript
 # #!/bin/sh
 # exec ${pkgs.openssh}/bin/ssh-add "\$@"
 # EOF
@@ -287,4 +288,32 @@ EOF
   };
   
 in
-fhsEnv
+stdenv.mkDerivation {
+  pname = "TraeCN";
+  version = version;
+  
+  outputs = [ "out" ];
+  
+  src = fhsEnv;
+  dontUnpack = true;
+  dontBuild = true;
+  
+  installPhase = ''
+    runHook preInstall
+    
+    # 安装主程序（out output）
+    mkdir -p $out/bin
+    cp -r ${fhsEnv}/* $out/
+    ln -sf ${fhsEnv}/bin/trae-cn-fhs $out/bin/trae-cn
+    
+    runHook postInstall
+  '';
+  
+  meta = {
+    description = "Trae CN";
+    homepage = "https://www.trae.cn/";
+    license = lib.licenses.unfree;
+    mainProgram = "trae-cn";
+    platforms = [ "x86_64-linux" ];
+  };
+}

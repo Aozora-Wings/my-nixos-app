@@ -18,4 +18,4 @@ in {
 ```
 
 To pin, simply change `sha=master` to `sha=0000000000000000000000000000000000000000`.
-nix-shell -p 'let pkgs = import <nixpkgs> {}; in pkgs.callPackage ./SteamTools {}'
+nix-shell -p 'let pkgs = import <nixpkgs> {}; in pkgs.callPackage ./traecn {}'
