@@ -9,7 +9,7 @@ let
   
   src = pkgs.fetchurl {
     url = "https://publicinaccess.blob.core.windows.net/file/Steam++.tgz";
-    sha256 = "sha256-bEiiYsBO4iBoqW0x+oXriRof30NqwDmUlurC+t3xQjw=";
+    sha256 = "sha256-pT+Dy/rg69PWwgKBJTy71dJB+6J89KiIOYhBxommedk=";
   };
   
   unpacked = pkgs.runCommand "steam++-unpacked" {} ''

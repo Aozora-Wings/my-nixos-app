@@ -4,10 +4,10 @@
 }:
 let
   lib = pkgs.lib;
-  version = "2.3.33255";
+  version = "2.3.37195";
   src = pkgs.fetchurl {
-    url = "https://lf-cdn.trae.com.cn/obj/trae-com-cn/pkg/app/releases/stable/{$version}/linux/Trae_CN-linux-x64.deb";
-    sha256 = "sha256-VX56wn7cyafU+x6ouBfaEnIaccYzy3HmgxSIHxtDNDM=";
+    url = "https://lf-cdn.trae.com.cn/obj/trae-com-cn/pkg/app/releases/stable/${version}/linux/Trae_CN-linux-x64.deb";
+    sha256 = "sha256-5geyRjSOTIR76aLV6ZbNgPr5BLuemFXyiBdAQxr0VIo=";
   };
   
   unpacked = pkgs.runCommand "traecn-unpacked" {
@@ -31,7 +31,7 @@ let
     find . -type f -exec chmod 0644 {} \;
     find . -type d -exec chmod 0755 {} \;
     
-    # 恢复可执行文件的权限
+    # 恢复可执行文件的权限全新 TRAE SOLO 桌面端已上线，在现有 TRAE IDE SOLO 模式的基础上得到了进一步提升，旨在为用户提供统一、高效、可定制的 AI 协作体验，覆盖从专业开发到日
     chmod +x ./usr/share/trae-cn/trae-cn 2>/dev/null || true
     chmod +x ./usr/share/trae-cn/chrome_crashpad_handler 2>/dev/null || true
     find ./usr/share/trae-cn -name "*.so" -exec chmod 0755 {} \; 2>/dev/null || true
@@ -67,15 +67,15 @@ let
     export LD_LIBRARY_PATH="/run/opengl-driver/lib:/run/opengl-driver/lib32:$APP_DIR/share/trae-cn:$APP_DIR/share/trae-cn/resources/app/modules/ckg/binary:$LD_LIBRARY_PATH"
     
     # 强制使用 X11 后端（解决 Wayland 下的 OpenGL 问题）
-    export QT_QPA_PLATFORM=xcb
-    export GDK_BACKEND=x11
+    # export QT_QPA_PLATFORM=xcb
+    # export GDK_BACKEND=x11
     
     # 输入法支持
-    export GTK_IM_MODULE=fcitx
-    export QT_IM_MODULE=fcitx
-    export XMODIFIERS=@im=fcitx
-    export INPUT_METHOD=fcitx
-    export GLFW_IM_MODULE=ibus
+    # export GTK_IM_MODULE=fcitx
+    # export QT_IM_MODULE=fcitx
+    # export XMODIFIERS=@im=fcitx
+    # export INPUT_METHOD=fcitx
+    # export GLFW_IM_MODULE=ibus
     
     # SSH Agent 支持 - 查找主机 SSH agent socket
     SSH_AUTH_SOCK_EXPORTED=""
@@ -211,7 +211,7 @@ let
       fcitx5
       fcitx5-gtk
       kdePackages.fcitx5-qt
-      libsForQt5.qt5.qtbase
+      #libsForQt5.qt5.qtbase
       
       # Git 和 SSH 支持
       git
@@ -246,10 +246,10 @@ let
       mkdir -p $out/etc/profile.d
       cat > $out/etc/profile.d/fcitx.sh << 'EOF'
 #!/bin/sh
-export GTK_IM_MODULE=fcitx
-export QT_IM_MODULE=fcitx
-export XMODIFIERS=@im=fcitx
-export INPUT_METHOD=fcitx
+# export GTK_IM_MODULE=fcitx
+# export QT_IM_MODULE=fcitx
+# export XMODIFIERS=@im=fcitx
+# export INPUT_METHOD=fcitx
 EOF
       chmod +x $out/etc/profile.d/fcitx.sh
       
