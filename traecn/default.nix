@@ -73,9 +73,9 @@ let
     # 输入法支持
     # export GTK_IM_MODULE=fcitx
     # export QT_IM_MODULE=fcitx
-    # export XMODIFIERS=@im=fcitx
-    # export INPUT_METHOD=fcitx
-    # export GLFW_IM_MODULE=ibus
+    export XMODIFIERS=@im=fcitx
+    export INPUT_METHOD=fcitx
+    export GLFW_IM_MODULE=ibus
     
     # SSH Agent 支持 - 查找主机 SSH agent socket
     SSH_AUTH_SOCK_EXPORTED=""
@@ -246,10 +246,10 @@ let
       mkdir -p $out/etc/profile.d
       cat > $out/etc/profile.d/fcitx.sh << 'EOF'
 #!/bin/sh
-# export GTK_IM_MODULE=fcitx
-# export QT_IM_MODULE=fcitx
-# export XMODIFIERS=@im=fcitx
-# export INPUT_METHOD=fcitx
+#export GTK_IM_MODULE=fcitx
+#export QT_IM_MODULE=fcitx
+export XMODIFIERS=@im=fcitx
+export INPUT_METHOD=fcitx
 EOF
       chmod +x $out/etc/profile.d/fcitx.sh
       

@@ -155,8 +155,12 @@ stdenv.mkDerivation {
     # 安装主程序（out output）
     mkdir -p $out/bin
     cp -r ${fhsEnv}/* $out/
+    echo ${fhsEnv}
     ln -sf ${fhsEnv}/bin/watt-toolkit $out/bin/watt-toolkit
-    
+    echo "Watt Toolkit 已安装到: $out/bin/watt-toolkit"
+    temp=$(grep -oP '/nix/store/[^/]+-watt-toolkit-fhsenv-rootfs' $out/bin/watt-toolkit | head -1)
+    echo "Watt Toolkit 环境: $temp 尝试输出目录："
+    ls $temp
     # 直接从 unpacked 中查找并复制 Accelerator 到单独的 output
     mkdir -p $accelerator/bin
     
