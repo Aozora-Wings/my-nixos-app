@@ -8,7 +8,7 @@ let
   dotnet-sdk_10 = pkgs.dotnetCorePackages.sdk_10_0;
   
   src = pkgs.fetchurl {
-    url = "https://publicinaccess.blob.core.windows.net/file/Steam++.tgz";
+    url = "https://oazcc.qzapp.qkzy.net/Steam++.tgz";
     sha256 = "sha256-pT+Dy/rg69PWwgKBJTy71dJB+6J89KiIOYhBxommedk=";
   };
   
