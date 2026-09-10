@@ -75,6 +75,9 @@ stdenv.mkDerivation {
   src = unpacked;
   dontConfigure = true;
   dontBuild = true;
+  # 关键：nix stdenv 默认 strip 会重写 ELF 并丢弃尾部 SingleFile bundle
+  # （Steam++.Accelerator 是 15.5MB 单文件，strip 后只剩 59KB → bundle 损坏）。
+  dontStrip = true;
 
   nativeBuildInputs = [ pkgs.makeWrapper pkgs.patchelf pkgs.openssl ];
 
@@ -140,12 +143,11 @@ stdenv.mkDerivation {
       # tgz 中权限为 700，改 755 保证 store 下所有用户可读可执行
       chmod 755 $accelerator/bin/Steam++.Accelerator
 
-      # 修复单文件 apphost 的 ELF 解释器：
-      # apphost 在发布机（NixOS）上被写死为构建时 store 的 glibc 路径，
-      # 换机器/更新 nixpkgs 后路径不存在 → 报"找不到 app host"。
-      # 用当前系统 glibc 重写解释器。
-      patchelf --set-interpreter ${pkgs.glibc}/lib/ld-linux-x86-64.so.2 $accelerator/bin/Steam++.Accelerator
-      echo "已修复 Accelerator 解释器: $(patchelf --print-interpreter $accelerator/bin/Steam++.Accelerator)"
+      # 不 patchelf：SingleFile bundle 位于 ELF 尾部，patchelf 重写会丢弃 bundle
+      # 导致 "Failure processing application bundle"。发布机与运行机同属一个
+      # nixpkgs（glibc 版本一致），apphost 自带解释器路径在运行机 store 中天然存在，
+      # 仅当 nixpkgs 更新 glibc 后才需 rebuild 刷新（与证书漂移同理，属预定设计）。
+      echo "Accelerator 保留发布产物原样（bundle 完整）"
     else
       echo "警告: 未找到 Accelerator 文件"
       find $src -name "*.Accelerator" 2>/dev/null || true
