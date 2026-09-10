@@ -45,6 +45,7 @@
         "weechat"
         "xmobar_0_44_2"
         "zathura"
+        "SteamTools-my"
       ];
 
       lib = nixpkgs.lib;
