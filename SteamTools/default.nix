@@ -5,7 +5,7 @@
 
 let
   lib = pkgs.lib;
-  dotnet-sdk_10 = pkgs.dotnetCorePackages.sdk_10_0;
+  dotnet-sdk_11 = pkgs.dotnetCorePackages.sdk_11_0;
 
   src = pkgs.fetchurl {
     url = "https://oazcc.qzapp.qkzy.net/Steam++.tgz";
@@ -113,13 +113,13 @@ stdenv.mkDerivation {
 
     # 入口 wrapper：直接使用 dotnet 运行主程序，参数/环境变量由 makeWrapper 自然传递
     mkdir -p $out/bin
-    makeWrapper ${dotnet-sdk_10}/bin/dotnet $out/bin/watt-toolkit \
-      --set DOTNET_ROOT "${dotnet-sdk_10}/share/dotnet" \
+    makeWrapper ${dotnet-sdk_11}/bin/dotnet $out/bin/watt-toolkit \
+      --set DOTNET_ROOT "${dotnet-sdk_11}/share/dotnet" \
       --set DOTNET_SYSTEM_GLOBALIZATION_INVARIANT "1" \
       --set STEAMTOOLS_BUNDLED_PFX "$ssl/SteamTools.Certificate.pfx" \
-      --set XDG_DATA_HOME "\$HOME/.local/share/WattToolkit" \
-      --prefix PATH : "${dotnet-sdk_10}/bin:${pkgs.nss_latest}/bin" \
-      --prefix LD_LIBRARY_PATH : "${lib.makeLibraryPath runtimeLibs}:${dotnet-sdk_10}/share/dotnet" \
+      --run 'export XDG_DATA_HOME="$HOME/.local/share/WattToolkit"' \
+      --prefix PATH : "${dotnet-sdk_11}/bin:${pkgs.nss_latest}/bin" \
+      --prefix LD_LIBRARY_PATH : "${lib.makeLibraryPath runtimeLibs}:${dotnet-sdk_11}/share/dotnet" \
       --add-flags "$out/assemblies/Steam++.dll"
     echo "Watt Toolkit 已安装到: $out/bin/watt-toolkit"
 
