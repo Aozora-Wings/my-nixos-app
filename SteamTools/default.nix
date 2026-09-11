@@ -116,6 +116,7 @@ stdenv.mkDerivation {
 
     # SkiaSharp 2.88 native resolver 只搜 app 目录/固定路径（不认 ../native/<rid>、不走 LD_LIBRARY_PATH）：
     # 必须把发布工具移出的原生库平铺回 assemblies/，同时保留 runtimes 布局（deps.json 声明）。
+    chmod -R u+w $out/assemblies
     if [ -d "$src/native/linux-x64" ]; then
       mkdir -p $out/assemblies/runtimes/linux-x64/native
       cp -v $src/native/linux-x64/*.so $out/assemblies/
