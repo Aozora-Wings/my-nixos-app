@@ -9,7 +9,7 @@ let
 
   src = pkgs.fetchurl {
     url = "https://oazcc.qzapp.qkzy.net/Steam++.tgz";
-    sha256 = "sha256-ZVmriRw+lyDky1gTyRd6Ezmp8pjsofLliRLnUyo4Bow=";
+    sha256 = "sha256-0c9185Co1VsWl7lWWLRw2nDku/ROMc+/ZAhciVR7uoc=";
   };
 
   unpacked = pkgs.runCommand "steam++-unpacked" {} ''
