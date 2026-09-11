@@ -148,6 +148,15 @@ stdenv.mkDerivation {
       # nixpkgs（glibc 版本一致），apphost 自带解释器路径在运行机 store 中天然存在，
       # 仅当 nixpkgs 更新 glibc 后才需 rebuild 刷新（与证书漂移同理，属预定设计）。
       echo "Accelerator 保留发布产物原样（bundle 完整）"
+
+      # 服务式运行：加速器由 systemd 用户服务拉起（AmbientCapabilities 授特权），
+      # 服务环境没有 DOTNET_ROOT，framework-dependent apphost 找不到 .NET 11，
+      # 需 makeWrapper 注入（与主程序入口 wrapper 同理；wrapper 只是脚本 exec，
+      # 不触碰 SingleFile bundle 本体）。
+      makeWrapper $accelerator/bin/Steam++.Accelerator $accelerator/bin/Steam++.Accelerator.wrapped \
+        --set DOTNET_ROOT "${dotnet-sdk_11}/share/dotnet" \
+        --set DOTNET_SYSTEM_GLOBALIZATION_INVARIANT "1"
+      echo "已生成服务用加速器 wrapper: $accelerator/bin/Steam++.Accelerator.wrapped"
     else
       echo "警告: 未找到 Accelerator 文件"
       find $src -name "*.Accelerator" 2>/dev/null || true
