@@ -123,6 +123,27 @@ stdenv.mkDerivation {
       cp -v $src/native/linux-x64/*.so $out/assemblies/runtimes/linux-x64/native/
     fi
 
+    # ---- 关键修复：out/modules/Accelerator/ 只保留插件 UI 入口及其非 Avalonia 依赖 ----
+    # 插件系统在独立 ALC 中从模块目录 LoadFrom。若模块目录存在 Steam++.Accelerator.dll
+    # （加速器服务本体）或 Avalonia/BD.Common 等运行时副本，会与主程序 assemblies/ 形成
+    # 双实例，导致 StandardAssetLoader 资源解析错乱（avares FileNotFoundException，UI 启动崩溃）。
+    # 加速器服务本体由 $accelerator 输出（完整模块）供 systemd 服务运行，主程序包不携带。
+    if [ -d "$out/modules/Accelerator" ]; then
+      chmod -R u+w $out/modules/Accelerator
+      (cd $out/modules/Accelerator && \
+        find . -maxdepth 1 -type f \
+          ! -name 'BD.WTTS.Client.Plugins.Accelerator.dll' \
+          ! -name 'BD.WTTS.Primitives.dll' \
+          ! -name 'BD.WTTS.Primitives.Models.dll' \
+          ! -name 'BD.WTTS.Primitives.Resources.dll' \
+          ! -name 'BD.WTTS.MicroServices.Primitives.dll' \
+          ! -name 'BD.WTTS.MicroServices.Primitives.Models.dll' \
+          ! -name 'BD.WTTS.MicroServices.Primitives.Resources.dll' \
+          ! -name 'BD.WTTS.Client.IPC.dll' -delete \
+        && rm -rf en es it ja ko ru zh-Hant)
+      echo "out/modules/Accelerator/ 精简为插件入口+依赖: $(ls $out/modules/Accelerator | wc -l) 文件"
+    fi
+
     # 入口 wrapper：直接使用 dotnet 运行主程序，参数/环境变量由 makeWrapper 自然传递
     mkdir -p $out/bin
     makeWrapper ${dotnet-sdk_11}/bin/dotnet $out/bin/watt-toolkit \
