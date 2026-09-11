@@ -9,7 +9,7 @@ let
 
   src = pkgs.fetchurl {
     url = "https://oazcc.qzapp.qkzy.net/Steam++.tgz";
-    sha256 = "sha256-7FVJpKhfk2Ncn42Y7N6HrRjGaIwPCDi2X5CctT2O76E=";
+    sha256 = "sha256-+47Ib7mup9MBP6cf3dbhH/FZI5kgQmw9dZ2F+gijh9w=";
   };
 
   unpacked = pkgs.runCommand "steam++-unpacked" {} ''
@@ -112,6 +112,14 @@ stdenv.mkDerivation {
     mv $out/*.dll $out/assemblies/ 2>/dev/null || true
     if [ -f "$out/Steam++.dll" ]; then
       mv $out/Steam++.dll $out/assemblies/
+    fi
+
+    # SkiaSharp 2.88 native resolver 只搜 app 目录/固定路径（不认 ../native/<rid>、不走 LD_LIBRARY_PATH）：
+    # 必须把发布工具移出的原生库平铺回 assemblies/，同时保留 runtimes 布局（deps.json 声明）。
+    if [ -d "$src/native/linux-x64" ]; then
+      mkdir -p $out/assemblies/runtimes/linux-x64/native
+      cp -v $src/native/linux-x64/*.so $out/assemblies/
+      cp -v $src/native/linux-x64/*.so $out/assemblies/runtimes/linux-x64/native/
     fi
 
     # 入口 wrapper：直接使用 dotnet 运行主程序，参数/环境变量由 makeWrapper 自然传递
